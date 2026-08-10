@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+uvicorn.pid
+
+# Node
+node_modules/
+dist/
+
+# Data / artifacts (keep code, ignore downloaded datasets & generated output)
+datasets/*
+!datasets/.gitkeep
+pretrained_models/*.pth
+reports/*.html
+reports/*.csv
+reports/*.pdf
+results/*
+
+# DB / env
+*.db
+.env
+npm_install*.log
+
+# OS
+.DS_Store
+Thumbs.db

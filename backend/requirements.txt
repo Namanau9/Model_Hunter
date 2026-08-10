@@ -1,0 +1,16 @@
+# ModelHunter backend dependencies
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+pydantic-settings>=2.2
+SQLAlchemy>=2.0
+torch>=2.1
+torchvision>=0.16
+numpy>=1.26
+pandas>=2.2
+matplotlib>=3.8
+Pillow>=10.2
+reportlab>=4.1
+captum>=0.7
+shap>=0.45
+python-multipart>=0.0.9
