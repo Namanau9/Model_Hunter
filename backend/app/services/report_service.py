@@ -65,11 +65,24 @@ def get_report_paths(evaluation_id: int) -> dict:
 
 def list_reports() -> list[dict]:
     settings = get_settings()
+    # Map report stem -> evaluation id so the frontend can build download links.
+    from pathlib import Path
+
+    id_by_stem: dict[str, int] = {}
+    db = SessionLocal()
+    try:
+        for r in db.query(EvaluationRecord).all():
+            if r.report_path:
+                id_by_stem[Path(r.report_path).stem] = r.id
+    finally:
+        db.close()
+
     out = []
     for f in sorted(settings.reports_dir.glob("*.html")):
         out.append(
             {
                 "name": f.stem,
+                "evaluation_id": id_by_stem.get(f.stem),
                 "html": str(f),
                 "csv": str(f.with_suffix(".csv")),
                 "pdf": str(f.with_suffix(".pdf")),

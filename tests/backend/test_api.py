@@ -96,3 +96,41 @@ def test_explainability_shap_resnet():
     assert data["technique"] == "shap"
     assert data["shape"] == [32, 32]
     assert len(data["image_base64"]) > 0
+
+
+def test_report_download():
+    # Download endpoint must serve report files for a real evaluation and
+    # the list endpoint must expose the evaluation id used to build links.
+
+    # Run a small real evaluation to guarantee a persisted report exists.
+    body = {
+        "model_name": "cnn",
+        "dataset_name": "mnist",
+        "attack_name": "fgsm",
+        "attack_params": {"epsilon": 0.1, "steps": 2},
+        "sample_limit": 24,
+        "batch_size": 32,
+    }
+    r = client.post("/api/evaluation/run", json=body)
+    assert r.status_code == 200, r.text
+    eid = r.json()["data"]["evaluation_id"]
+    assert eid is not None
+
+    r = client.get("/api/reports")
+    assert r.status_code == 200
+    reports = r.json()["data"]["reports"]
+    assert isinstance(reports, list)
+    assert len(reports) > 0
+    assert "evaluation_id" in reports[0]
+
+    for fmt in ("html", "csv", "pdf"):
+        d = client.get(f"/api/reports/{eid}/download/{fmt}")
+        assert d.status_code == 200
+        assert len(d.content) > 0
+    # Unsupported format rejected with 400.
+    bad = client.get(f"/api/reports/{eid}/download/txt")
+    assert bad.status_code == 400
+    # Unknown evaluation id rejected with 404.
+    missing = client.get("/api/reports/999999/download/pdf")
+    assert missing.status_code == 404
+
