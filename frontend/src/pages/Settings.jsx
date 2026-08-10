@@ -26,7 +26,7 @@ export default function Settings() {
           <Card sx={{ p: 2 }}>
             <Typography variant="h6" sx={{ mb: 2 }}>Architecture</Typography>
             {["React Frontend", "FastAPI API", "Service Layer", "ML Engines", "Evaluation", "Database / Reports"].map((a) => (
-              <Chip key={a} label={a} variant="outlined" sx={{ mr: 1, mb: 1, "&:nth-child": { color: "#00E5FF" } }} />
+                            <Chip key={a} label={a} variant="outlined" sx={{ mr: 1, mb: 1 }} />
             ))}
             <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
               Business logic lives in the service layer and registries — never inside API routes.

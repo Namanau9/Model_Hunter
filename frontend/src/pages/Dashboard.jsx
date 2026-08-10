@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Grid, Card, CardContent, Typography, CircularProgress, Box } from "@mui/material";
+import { Grid, Card, CardContent, Typography, CircularProgress, Box, useTheme } from "@mui/material";
 import MemoryIcon from "@mui/icons-material/Memory";
 import StorageIcon from "@mui/icons-material/Storage";
 import SecurityIcon from "@mui/icons-material/Security";
@@ -14,8 +14,9 @@ import {
 } from "recharts";
 
 export default function Dashboard() {
-  const { info, health, loading, tick, refresh } = useApp();
+    const { info, health, loading, tick, refresh } = useApp();
   const { notify } = useToast();
+  const theme = useTheme();
   const [history, setHistory] = useState([]);
   const [benchChart, setBenchChart] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -97,7 +98,7 @@ export default function Dashboard() {
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                   Clean Acc: {latest.clean_accuracy.toFixed(1)}% · Adv Acc: {latest.adversarial_accuracy.toFixed(1)}% · ASR: {latest.attack_success_rate.toFixed(1)}%
                 </Typography>
-                <Typography variant="h5" sx={{ mt: 2, color: "#00E5FF" }}>
+                                <Typography variant="h5" sx={{ mt: 2, color: "secondary.main" }}>
                   Robustness: {latest.robustness_score.toFixed(1)} ({latest.robustness_class})
                 </Typography>
               </CardContent>
@@ -116,15 +117,30 @@ export default function Dashboard() {
                   <CircularProgress size={24} />
                 </Box>
               ) : benchChart.length ? (
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={benchChart} margin={{ left: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                    <XAxis dataKey="name" stroke="#94A3B8" interval={0} fontSize={10} />
-                    <YAxis stroke="#94A3B8" unit="%" />
-                    <Tooltip contentStyle={{ background: "#1E293B", border: "1px solid #334155" }} />
+                                <ResponsiveContainer width="100%" height={280}>
+                                    <BarChart data={benchChart} margin={{ left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 4" stroke={theme.palette.custom.border} />
+                    <XAxis dataKey="name" stroke={theme.palette.text.secondary} interval={0} fontSize={11} tickMargin={6} />
+                    <YAxis stroke={theme.palette.text.secondary} unit="%" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: theme.palette.custom.surface,
+                        borderColor: theme.palette.custom.border,
+                        color: theme.palette.text.primary,
+                      }}
+                    />
                     <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                       {benchChart.map((d, i) => (
-                        <Cell key={i} fill={d.value <= 30 ? "#FF1744" : d.value <= 60 ? "#FF9800" : "#00C853"} />
+                        <Cell
+                          key={i}
+                          fill={
+                            d.value <= 30
+                              ? theme.palette.error.main
+                              : d.value <= 60
+                              ? theme.palette.warning.main
+                              : theme.palette.success.main
+                          }
+                        />
                       ))}
                     </Bar>
                   </BarChart>

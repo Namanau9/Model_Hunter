@@ -18,6 +18,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import SettingsIcon from "@mui/icons-material/Settings";
 import Logo from "../components/Logo";
 import { useApp } from "../contexts/AppContext";
+import { alpha } from "@mui/material/styles";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: <DashboardIcon /> },
@@ -41,34 +42,56 @@ export default function MainLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
 
-  const activeLabel = NAV.find((n) => n.to === location.pathname)?.label ?? "ModelHunter";
+        const activeKey = location.pathname;
+  const activeLabel = NAV.find((n) => n.to === activeKey)?.label ?? "ModelHunter";
 
   const drawer = (
     <>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, px: 2, py: 2 }}>
-        <Logo size={32} />
-        <Typography variant="h6" sx={{ color: "#00E5FF", fontWeight: 700, letterSpacing: 1 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, px: 2.5, py: 2.5 }}>
+        <Logo size={34} />
+        <Typography variant="h6" sx={{ color: "secondary.main", fontWeight: 700, letterSpacing: 1 }}>
           ModelHunter
         </Typography>
       </Box>
-      <Divider sx={{ borderColor: "#1E293B" }} />
+      <Divider sx={{ borderColor: "divider" }} />
       <List>
-        {NAV.map((n) => (
-          <ListItemButton
-            key={n.to}
-            component={NavLink}
-            to={n.to}
-            onClick={() => setMobileOpen(false)}
-            sx={{
-              color: "#94A3B8",
-              " &.active, &:hover": { color: "#00E5FF", bgcolor: "rgba(0,229,255,.08)" },
-              "& .MuiListItemIcon-root": { color: "inherit", minWidth: 40 },
-            }}
-          >
-            <ListItemIcon>{n.icon}</ListItemIcon>
-            <ListItemText primary={n.label} />
-          </ListItemButton>
-        ))}
+        {NAV.map((n) => {
+          const active = n.to === activeKey;
+          return (
+            <ListItemButton
+              key={n.to}
+              component={NavLink}
+              to={n.to}
+              onClick={() => setMobileOpen(false)}
+              sx={{
+                color: "text.secondary",
+                py: 1.25,
+                pl: 1.5,
+                pr: 2.5,
+                position: "relative",
+                alignItems: "center",
+                gap: 1,
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  left: 8,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  width: 4,
+                  height: active ? 24 : 0,
+                  borderRadius: 2,
+                  backgroundColor: active ? "secondary.main" : "transparent",
+                  transition: "height 200ms ease, background-color 200ms ease",
+                },
+                "&.active, &:hover": { color: "secondary.main", backgroundColor: "rgba(0,229,255,.08)" },
+                "& .MuiListItemIcon-root": { color: "inherit", minWidth: 40 },
+              }}
+            >
+              <ListItemIcon>{n.icon}</ListItemIcon>
+              <ListItemText primary={n.label} />
+            </ListItemButton>
+          );
+        })}
       </List>
     </>
   );
@@ -77,11 +100,14 @@ export default function MainLayout() {
     <Box sx={{ display: "flex" }}>
       <AppBar
         position="fixed"
+        elevation={0}
         sx={{
           zIndex: 1300,
           ml: { md: `${DRAWER_W}px` },
-          bgcolor: "#1E293B",
-          boxShadow: "0 0 20px rgba(0,229,255,.15)",
+          bgcolor: "background.paper",
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          boxShadow: "0 0 22px rgba(0,229,255,.10)",
         }}
       >
         <Toolbar>
@@ -97,10 +123,22 @@ export default function MainLayout() {
             </IconButton>
           )}
           <Logo size={28} sx={{ mr: 1, display: { md: "none" } }} />
-          <Typography variant="h6" sx={{ flexGrow: 1, letterSpacing: 1, display: { md: "none" } }}>
+          <Typography
+            variant="h6"
+            sx={{
+              flexGrow: 1,
+              letterSpacing: 1,
+              display: { md: "none" },
+              color: "secondary.main",
+              fontWeight: 700,
+            }}
+          >
             ModelHunter
           </Typography>
-          <Typography variant="subtitle2" sx={{ mr: 2, display: { xs: "none", md: "block" } }}>
+          <Typography
+            variant="subtitle2"
+            sx={{ mr: 2, display: { xs: "none", md: "block" }, color: "text.primary", fontWeight: 600 }}
+          >
             {activeLabel}
           </Typography>
           <Tooltip title="Refresh data">
@@ -112,7 +150,17 @@ export default function MainLayout() {
             size="small"
             label={statusOk ? "API ONLINE" : "API OFFLINE"}
             color={statusOk ? "success" : "error"}
-            variant="outlined"
+            variant="filled"
+            sx={{
+              ml: 1,
+              fontWeight: 700,
+              letterSpacing: 1,
+              bgcolor: statusOk ? "success.main" : "error.main",
+              color: statusOk ? "#001014" : "#ffffff",
+              boxShadow: statusOk
+                ? `0 0 10px 2px ${alpha(theme.palette.success.main, 0.45)}`
+                : `0 0 10px 2px ${alpha(theme.palette.error.main, 0.45)}`,
+            }}
           />
         </Toolbar>
       </AppBar>
@@ -129,8 +177,9 @@ export default function MainLayout() {
             "& .MuiDrawer-paper": {
               width: DRAWER_W,
               boxSizing: "border-box",
-              bgcolor: "#0B1220",
-              borderRight: "1px solid #1E293B",
+              bgcolor: "background.default",
+              borderRight: "1px solid",
+              borderColor: "divider",
             },
           }}
         >
@@ -139,8 +188,8 @@ export default function MainLayout() {
       </Box>
 
       <Box component="main" sx={{ flexGrow: 1, p: 3, mt: 8, pb: 4 }}>
-        <Backdrop open={!!loading} sx={{ color: "#00E5FF", zIndex: (t) => t.zIndex.drawer + 1 }}>
-          <CircularProgress color="inherit" />
+        <Backdrop open={!!loading} sx={{ color: "secondary.main", zIndex: (t) => t.zIndex.drawer + 1 }}>
+          <CircularProgress color="secondary" />
         </Backdrop>
         <Outlet />
       </Box>

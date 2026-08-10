@@ -4,21 +4,25 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 
 /** Consistent page header + optional refresh / action buttons. */
 export default function PageShell({ title, subtitle, actions, onRefresh, children }) {
-  return (
+    return (
     <Box>
       <Stack
         direction="row"
         justifyContent="space-between"
         alignItems="flex-start"
-        sx={{ mb: 3, flexWrap: "wrap", gap: 1 }}
+        sx={{ mb: 3, flexWrap: "wrap", gap: 1.5 }}
       >
         <Box>
-          <Typography variant="h4" sx={{ color: "#00E5FF", fontWeight: 700 }}>
+          <Typography variant="h4" sx={{ color: "secondary.main", fontWeight: 700 }}>
             {title}
           </Typography>
-          {subtitle && <Typography color="text.secondary">{subtitle}</Typography>}
+          {subtitle && (
+            <Typography color="text.secondary" sx={{ mt: 0.5, maxWidth: "64ch" }}>
+              {subtitle}
+            </Typography>
+          )}
         </Box>
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0 }}>
           {onRefresh && (
             <Tooltip title="Refresh">
               <IconButton onClick={onRefresh} color="secondary">
