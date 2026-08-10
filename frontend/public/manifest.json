@@ -1,0 +1,17 @@
+{
+  "name": "ModelHunter — Adversarial ML Security Platform",
+  "short_name": "ModelHunter",
+  "description": "Adversarial ML robustness evaluation, attacks, defenses, explainability and reports.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B1220",
+  "theme_color": "#0B1220",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml",
+      "purpose": "maskable any"
+    }
+  ]
+}

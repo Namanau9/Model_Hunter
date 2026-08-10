@@ -1,24 +1,37 @@
 import React, { useEffect, useState } from "react";
 import { Grid, Card, CardContent, Typography, Chip, Box } from "@mui/material";
 import ShieldIcon from "@mui/icons-material/Shield";
+import { useApp } from "../contexts/AppContext";
+import { useToast } from "../contexts/ToastContext";
 import { apiGet } from "../api/client";
+import PageShell from "../components/PageShell";
 
 export default function DefenseCenter() {
+  const { tick } = useApp();
+  const { notify } = useToast();
   const [defenses, setDefenses] = useState([]);
 
-  useEffect(() => {
-    (async () => {
-      try { const r = await apiGet("/defenses"); setDefenses(r.data.defenses || []); }
-      catch (e) { /* offline */ }
-    })();
-  }, []);
+  const load = async () => {
+    try {
+      const r = await apiGet("/defenses");
+      setDefenses(r.data.defenses || []);
+    } catch (e) {
+      notify("Could not load defenses", "warning");
+    }
+  };
 
-  return (
-    <Box>
-      <Typography variant="h4" sx={{ color: "#00E5FF" }}>Defense Center</Typography>
-      <Typography color="text.secondary" sx={{ mb: 3 }}>
-        Defensive mechanisms to harden models against adversarial attacks.
-      </Typography>
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tick]);
+
+    return (
+    <>
+      <PageShell
+        title="Defense Center"
+        subtitle="Defensive mechanisms to harden models against adversarial attacks."
+        onRefresh={load}
+      />
       <Grid container spacing={3}>
         {defenses.map((d) => (
           <Grid item xs={12} sm={6} md={4} key={d.name}>
@@ -37,7 +50,7 @@ export default function DefenseCenter() {
             </Card>
           </Grid>
         ))}
-      </Grid>
-    </Box>
+            </Grid>
+    </>
   );
 }

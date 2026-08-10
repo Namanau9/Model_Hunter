@@ -1,15 +1,17 @@
 import React from "react";
 import { Grid, Card, CardContent, Typography, Box, Chip } from "@mui/material";
 import { useApp } from "../contexts/AppContext";
+import PageShell from "../components/PageShell";
 
 export default function Settings() {
-  const { info, health } = useApp();
-  return (
-    <Box>
-      <Typography variant="h4" sx={{ color: "#00E5FF" }}>Settings</Typography>
-      <Typography color="text.secondary" sx={{ mb: 3 }}>
-        Platform configuration and architecture information.
-      </Typography>
+  const { info, health, refresh } = useApp();
+    return (
+    <>
+      <PageShell
+        title="Settings"
+        subtitle="Platform configuration and architecture information."
+        onRefresh={refresh}
+      />
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
           <Card sx={{ p: 2 }}>
@@ -31,7 +33,7 @@ export default function Settings() {
             </Typography>
           </Card>
         </Grid>
-      </Grid>
-    </Box>
+            </Grid>
+    </>
   );
 }

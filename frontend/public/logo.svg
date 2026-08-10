@@ -1,0 +1,11 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Shield -->
+  <path d="M32 4 L56 12 V32 C56 46 45 57 32 60 C19 57 8 46 8 32 V12 Z"
+        fill="#0B1220" stroke="#00E5FF" stroke-width="3" stroke-linejoin="round"/>
+  <!-- Circuit traces -->
+  <path d="M18 22 H26 L30 26 M46 22 H38 L34 26" stroke="#2563EB" stroke-width="2" fill="none"/>
+  <!-- Target crosshair -->
+  <circle cx="32" cy="38" r="14" stroke="#00E5FF" stroke-width="2" fill="none"/>
+  <circle cx="32" cy="38" r="7" fill="#00E5FF" opacity="0.25"/>
+  <circle cx="32" cy="38" r="2.6" fill="#2563EB"/>
+</svg>

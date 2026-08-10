@@ -1,25 +1,38 @@
 import React, { useEffect, useState } from "react";
 import { Grid, Card, CardContent, Typography, Chip, Box } from "@mui/material";
 import StorageIcon from "@mui/icons-material/Storage";
+import { useApp } from "../contexts/AppContext";
+import { useToast } from "../contexts/ToastContext";
 import { apiGet } from "../api/client";
 import StatCard from "../components/StatCard";
+import PageShell from "../components/PageShell";
 
 export default function Datasets() {
+  const { tick } = useApp();
+  const { notify } = useToast();
   const [datasets, setDatasets] = useState([]);
 
-  useEffect(() => {
-    (async () => {
-      try { const r = await apiGet("/datasets"); setDatasets(r.data.datasets || []); }
-      catch (e) { /* offline */ }
-    })();
-  }, []);
+  const load = async () => {
+    try {
+      const r = await apiGet("/datasets");
+      setDatasets(r.data.datasets || []);
+    } catch (e) {
+      notify("Could not load datasets", "warning");
+    }
+  };
 
-  return (
-    <Box>
-      <Typography variant="h4" sx={{ color: "#00E5FF" }}>Datasets</Typography>
-      <Typography color="text.secondary" sx={{ mb: 3 }}>
-        Datasets download automatically on first use.
-      </Typography>
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tick]);
+
+    return (
+    <>
+      <PageShell
+        title="Datasets"
+        subtitle="Datasets download automatically on first use."
+        onRefresh={load}
+      />
       <Grid container spacing={3}>
         {datasets.map((d) => (
           <Grid item xs={12} md={4} key={d.name}>
@@ -40,7 +53,7 @@ export default function Datasets() {
             </Card>
           </Grid>
         ))}
-      </Grid>
-    </Box>
+            </Grid>
+    </>
   );
 }

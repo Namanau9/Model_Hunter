@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import {
   Grid, Card, CardContent, Typography, Button, TextField, MenuItem, Select, InputLabel,
-  FormControl, Box, Alert, CircularProgress, Paper,
+  FormControl, Alert, CircularProgress, Paper,
 } from "@mui/material";
-import { apiGet, apiPost } from "../api/client";
+import { useToast } from "../contexts/ToastContext";
+import { apiPost } from "../api/client";
+import PageShell from "../components/PageShell";
 import MetricTable from "../components/MetricTable";
 import RobustnessGauge from "../components/RobustnessGauge";
 
@@ -11,6 +13,7 @@ const compatible = { cifar10: ["resnet18", "mobilenetv2"], gtsrb: ["resnet18", "
 const defenses = ["none", "adversarial_training", "ensemble", "input_preprocessing"];
 
 export default function Evaluation() {
+  const { notify } = useToast();
   const [model, setModel] = useState("cnn");
   const [dataset, setDataset] = useState("mnist");
   const [attack, setAttack] = useState("fgsm");
@@ -25,8 +28,15 @@ export default function Evaluation() {
     setModel(compatible[dataset][0]);
   }, [dataset]);
 
+  const reset = () => {
+    setErr(null);
+    setResult(null);
+  };
+
   const run = async () => {
-    setRunning(true); setErr(null); setResult(null);
+    setRunning(true);
+    setErr(null);
+    setResult(null);
     try {
       const r = await apiPost("/evaluation/run", {
         model_name: model, dataset_name: dataset, attack_name: attack,
@@ -35,20 +45,26 @@ export default function Evaluation() {
         sample_limit: Number(samples), batch_size: 64,
       });
       setResult(r.data);
-    } catch (e) { setErr(e.response?.data?.detail || e.message); }
-    finally { setRunning(false); }
+      notify(
+        `Evaluation complete: robustness ${r.data.metrics.robustness_score.toFixed(1)} (${r.data.metrics.robustness_class})`,
+        "success"
+      );
+    } catch (e) {
+      const detail = e.response?.data?.detail || e.message;
+      setErr(detail);
+      notify(`Evaluation failed: ${detail}`, "error");
+    } finally {
+      setRunning(false);
+    }
   };
 
-  const refreshHistory = () => {
-    // placeholder to keep single-page state; history is on Dashboard
-  };
-
-  return (
-    <Box>
-      <Typography variant="h4" sx={{ color: "#00E5FF" }}>Evaluation</Typography>
-      <Typography color="text.secondary" sx={{ mb: 3 }}>
-        Execute an attack against a model and compute all security metrics.
-      </Typography>
+    return (
+    <>
+      <PageShell
+        title="Evaluation"
+        subtitle="Execute an attack against a model and compute all security metrics."
+        onRefresh={reset}
+      />
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>
@@ -80,8 +96,14 @@ export default function Evaluation() {
             </FormControl>
             <TextField label="Epsilon" type="number" value={epsilon} onChange={(e) => setEpsilon(e.target.value)} fullWidth sx={{ mb: 2 }} />
             <TextField label="Sample Limit" type="number" value={samples} onChange={(e) => setSamples(e.target.value)} fullWidth sx={{ mb: 2 }} />
-            <Button variant="contained" fullWidth onClick={run} disabled={running}>
-              {running ? <CircularProgress size={22} color="inherit" /> : "Run Evaluation"}
+                        <Button
+              variant="contained"
+              fullWidth
+              onClick={run}
+              disabled={running}
+              startIcon={running ? <CircularProgress size={20} color="inherit" /> : null}
+            >
+              {running ? "Running..." : "Run Evaluation"}
             </Button>
             {err && <Alert severity="error" sx={{ mt: 2 }}>{err}</Alert>}
           </Card>
@@ -114,8 +136,8 @@ export default function Evaluation() {
               </CardContent>
             </Card>
           )}
-        </Grid>
+                </Grid>
       </Grid>
-    </Box>
+    </>
   );
 }

@@ -1,33 +1,45 @@
 import React, { useEffect, useState } from "react";
 import { Grid, Card, CardContent, Typography, Box, Button, Stack, Alert, Tooltip } from "@mui/material";
 import DescriptionIcon from "@mui/icons-material/Description";
+import { useApp } from "../contexts/AppContext";
+import { useToast } from "../contexts/ToastContext";
 import { apiGet } from "../api/client";
+import PageShell from "../components/PageShell";
 
 // Trigger a browser download of the requested report file via the backend.
+// Throws on failure so the caller can surface a toast.
 async function downloadReport(evaluationId, fmt, fallbackName) {
-  if (!evaluationId) return;
-  try {
-    const res = await fetch(`/api/reports/${evaluationId}/download/${fmt}`, { headers: { Accept: "*/*" } });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const blob = await res.blob();
-    const disposition = res.headers.get("Content-Disposition") || "";
-    const m = disposition.match(/filename="?([^"]+)"?/i);
-    const filename = m ? m[1] : `${fallbackName || "report"}.${fmt}`;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  } catch (e) {
-    window.alert(`Download failed: ${e.message}`);
-  }
+  if (!evaluationId) return null;
+  const res = await fetch(`/api/reports/${evaluationId}/download/${fmt}`, {
+    headers: { Accept: "*/*" },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const blob = await res.blob();
+  const disposition = res.headers.get("Content-Disposition") || "";
+  const m = disposition.match(/filename="?([^"]+)"?/i);
+  const filename = m ? m[1] : `${fallbackName || "report"}.${fmt}`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  return filename;
 }
 
 function DownloadButtons({ id, name }) {
+  const { notify } = useToast();
   if (!id) return <Typography variant="caption" color="text.secondary">(no matching evaluation)</Typography>;
+  const handleDownload = async (fmt) => {
+    try {
+      const filename = await downloadReport(id, fmt, name);
+      notify(`Downloaded ${filename}`, "success");
+    } catch (e) {
+      notify(`Download failed: ${e.message}`, "error");
+    }
+  };
   return (
     <Box sx={{ display: "flex", gap: 0.5 }}>
       {["html", "csv", "pdf"].map((fmt) => (
@@ -36,7 +48,7 @@ function DownloadButtons({ id, name }) {
             size="small"
             variant="outlined"
             color="secondary"
-            onClick={() => downloadReport(id, fmt, name)}
+            onClick={() => handleDownload(fmt)}
           >
             {fmt.toUpperCase()}
           </Button>
@@ -47,26 +59,33 @@ function DownloadButtons({ id, name }) {
 }
 
 export default function Reports() {
+  const { tick } = useApp();
   const [reports, setReports] = useState([]);
   const [history, setHistory] = useState([]);
 
+  const load = async () => {
+    try {
+      const r = await apiGet("/reports");
+      setReports(r.data.reports || []);
+      const h = await apiGet("/evaluation/history");
+      setHistory(h.data.history || []);
+    } catch (e) {
+      /* offline */
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        const r = await apiGet("/reports");
-        setReports(r.data.reports || []);
-        const h = await apiGet("/evaluation/history");
-        setHistory(h.data.history || []);
-      } catch (e) { /* offline */ }
-    })();
-  }, []);
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tick]);
 
   return (
-    <Box>
-      <Typography variant="h4" sx={{ color: "#00E5FF" }}>Reports</Typography>
-      <Typography color="text.secondary" sx={{ mb: 3 }}>
-        PDF, HTML and CSV benchmarking reports generated from real evaluations. Use the buttons to download each format.
-      </Typography>
+    <>
+      <PageShell
+        title="Reports"
+        subtitle="PDF, HTML and CSV benchmarking reports generated from real evaluations. Use the buttons to download each format."
+        onRefresh={load}
+      />
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={5}>
@@ -126,7 +145,7 @@ export default function Reports() {
             )}
           </Card>
         </Grid>
-      </Grid>
-    </Box>
+            </Grid>
+    </>
   );
 }

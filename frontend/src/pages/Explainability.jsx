@@ -3,11 +3,14 @@ import {
   Grid, Card, CardContent, Typography, Button, MenuItem, Select, InputLabel, FormControl,
   Box, Alert, CircularProgress, TextField,
 } from "@mui/material";
+import { useToast } from "../contexts/ToastContext";
 import { apiPost } from "../api/client";
+import PageShell from "../components/PageShell";
 
 const compatible = { cifar10: ["resnet18", "mobilenetv2"], gtsrb: ["resnet18", "mobilenetv2"], mnist: ["cnn"] };
 
 export default function Explainability() {
+  const { notify } = useToast();
   const [dataset, setDataset] = useState("mnist");
   const [model, setModel] = useState("cnn");
   const [technique, setTechnique] = useState("gradcam");
@@ -20,21 +23,28 @@ export default function Explainability() {
 
   const run = async () => {
     setLoading(true); setErr(null); setImg(null);
-    try {
+        try {
       const r = await apiPost("/explainability", {
         model_name: model, dataset_name: dataset, technique, sample_index: Number(idx),
       });
       setImg(`data:image/png;base64,${r.data.image_base64}`);
-    } catch (e) { setErr(e.response?.data?.detail || e.message); }
-    finally { setLoading(false); }
+      notify(`${technique.toUpperCase()} explanation generated`, "success");
+    } catch (e) {
+      const detail = e.response?.data?.detail || e.message;
+      setErr(detail);
+      notify(`Explanation failed: ${detail}`, "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ color: "#00E5FF" }}>Explainability</Typography>
-      <Typography color="text.secondary" sx={{ mb: 3 }}>
-        GradCAM & SHAP visual explanations for model decisions.
-      </Typography>
+            <PageShell
+        title="Explainability"
+        subtitle="GradCAM & SHAP visual explanations for model decisions."
+        onRefresh={() => { setImg(null); setErr(null); }}
+      />
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>
           <Card sx={{ p: 2 }}>

@@ -1,21 +1,24 @@
 import React, { useEffect, useState } from "react";
 import {
   Grid, Card, CardContent, Typography, Button, TextField, MenuItem, Select, InputLabel,
-  FormControl, Box, Chip, Alert, CircularProgress, Stack,
+  FormControl, Box, Chip, CircularProgress, Stack,
 } from "@mui/material";
+import { useApp } from "../contexts/AppContext";
+import { useToast } from "../contexts/ToastContext";
 import { apiGet, apiPost, apiUpload } from "../api/client";
+import PageShell from "../components/PageShell";
 
 const compatible = { cifar10: ["resnet18", "mobilenetv2"], gtsrb: ["resnet18", "mobilenetv2"], mnist: ["cnn"] };
 
 export default function Models() {
+  const { tick } = useApp();
+  const { notify } = useToast();
   const [models, setModels] = useState([]);
   const [dataset, setDataset] = useState("mnist");
   const [model, setModel] = useState("cnn");
   const [epochs, setEpochs] = useState(1);
   const [training, setTraining] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [msg, setMsg] = useState(null);
-  const [err, setErr] = useState(null);
   const [uploaded, setUploaded] = useState([]);
 
   const load = async () => {
@@ -23,29 +26,47 @@ export default function Models() {
     setModels(r.data.models || []);
     setUploaded(r.data.uploads || []);
   };
-  useEffect(() => { load().catch(() => {}); }, []);
+
+  useEffect(() => {
+    load().catch(() => notify("Could not load models", "warning"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tick]);
 
   const train = async () => {
-    setTraining(true); setMsg(null); setErr(null);
+    setTraining(true);
     try {
       const r = await apiPost("/models/train", { model_name: model, dataset_name: dataset, epochs, batch_size: 64 });
-      setMsg(`Trained ${model} on ${dataset}: test accuracy ${r.data.test_accuracy}%`);
+      notify(`Trained ${model} on ${dataset}: test accuracy ${r.data.test_accuracy}%`, "success");
       await load();
-    } catch (e) { setErr(e.response?.data?.detail || e.message); }
-    finally { setTraining(false); }
+    } catch (e) {
+      const detail = e.response?.data?.detail || e.message;
+      notify(`Training failed: ${detail}`, "error");
+    } finally {
+      setTraining(false);
+    }
   };
 
   const doUpload = async (file) => {
-    setUploading(true); setErr(null);
-    try { await apiUpload("/models/upload", file); await load(); }
-    catch (e) { setErr(e.response?.data?.detail || e.message); }
-    finally { setUploading(false); }
+    setUploading(true);
+    try {
+      await apiUpload("/models/upload", file);
+      await load();
+      notify(`Uploaded ${file.name}`, "success");
+    } catch (e) {
+      const detail = e.response?.data?.detail || e.message;
+      notify(`Upload failed: ${detail}`, "error");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
-    <Box>
-      <Typography variant="h4" sx={{ color: "#00E5FF" }}>Models</Typography>
-      <Typography color="text.secondary" sx={{ mb: 3 }}>Load, train and upload deep learning models.</Typography>
+    <>
+      <PageShell
+        title="Models"
+        subtitle="Load, train and upload deep learning models."
+        onRefresh={() => load().catch(() => {})}
+      />
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={5}>
@@ -64,11 +85,9 @@ export default function Models() {
               </Select>
             </FormControl>
             <TextField label="Epochs" type="number" value={epochs} onChange={(e) => setEpochs(Number(e.target.value))} fullWidth sx={{ mb: 2 }} />
-            <Button variant="contained" onClick={train} disabled={training} fullWidth>
-              {training ? <CircularProgress size={22} color="inherit" /> : "Train Model"}
+                        <Button variant="contained" onClick={train} disabled={training} fullWidth startIcon={training ? <CircularProgress size={20} color="inherit" /> : null}>
+              {training ? "Training..." : "Train Model"}
             </Button>
-            {msg && <Alert severity="success" sx={{ mt: 2 }}>{msg}</Alert>}
-            {err && <Alert severity="error" sx={{ mt: 2 }}>{err}</Alert>}
           </Card>
         </Grid>
 
@@ -113,6 +132,6 @@ export default function Models() {
           </Stack>
         </Grid>
       </Grid>
-    </Box>
+        </>
   );
 }
