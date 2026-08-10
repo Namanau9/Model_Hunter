@@ -74,3 +74,25 @@ def test_run_invalid_combo():
     r = client.post("/api/evaluation/run", json=body)
     assert r.status_code == 400
     assert "incompatible" in r.json().get("detail", "") or "incompatible" in r.json().get("message", "")
+
+
+def test_explainability_gradcam():
+    body = {"model_name": "cnn", "dataset_name": "mnist", "technique": "gradcam", "sample_index": 0}
+    r = client.post("/api/explainability", json=body)
+    assert r.status_code == 200
+    data = r.json()["data"]
+    assert data["technique"] == "gradcam"
+    assert data["shape"] == [28, 28]
+    assert len(data["image_base64"]) > 0
+
+
+def test_explainability_shap_resnet():
+    # Regression: SHAP previously crashed on ResNet18 (in-place ReLU + wrong
+    # SHAP API unpacking). Must now succeed on a ResNet-family model too.
+    body = {"model_name": "resnet18", "dataset_name": "cifar10", "technique": "shap", "sample_index": 0}
+    r = client.post("/api/explainability", json=body)
+    assert r.status_code == 200
+    data = r.json()["data"]
+    assert data["technique"] == "shap"
+    assert data["shape"] == [32, 32]
+    assert len(data["image_base64"]) > 0

@@ -52,6 +52,11 @@ def run_explainability(
     import base64
     import io
 
+    # Force a non-interactive matplotlib backend so no Tk/Tcl GUI thread is
+    # spawned. This keeps pytest and headless servers free of teardown errors.
+    import matplotlib
+
+    matplotlib.use("Agg")
     from matplotlib import pyplot as plt
 
     buf = io.BytesIO()
@@ -75,4 +80,8 @@ def run_explainability(
     encoded = base64.b64encode(buf.read()).decode("ascii")
 
     result["image_base64"] = encoded
+    # Drop raw numpy arrays — they are not JSON-serializable and the frontend
+    # only needs the base64 PNG + shape metadata.
+    result.pop("heatmap", None)
+    result.pop("image", None)
     return result
