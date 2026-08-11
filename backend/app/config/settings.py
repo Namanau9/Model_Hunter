@@ -63,7 +63,10 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./modelhunter.db"
 
     # --- ML defaults ---------------------------------------------------
-    device: str = "cpu"
+    # Device preference: auto | cpu | cuda | cuda:<idx> | mps.
+    # "auto" picks CUDA > MPS > CPU at runtime with graceful fallback.
+    device: str = "auto"
+    num_workers: int = 0  # 0 keeps DataLoader Windows/macOS friendly
     seed: int = 42
     default_batch_size: int = 64
     cnn_epochs: int = 1

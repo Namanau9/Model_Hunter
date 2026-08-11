@@ -1,0 +1,25 @@
+# GPU-enabled override for docker compose.
+#
+# Usage:
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.gpu.yml up --build
+#
+# Requires the NVIDIA Container Toolkit installed on the host:
+#   https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
+#
+# The base image stays CPU-only; to use GPU wheels, build the backend image
+# with TORCH_INDEX_URL matching your CUDA version:
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.gpu.yml \
+#     build --build-arg TORCH_INDEX_URL=https://download.pytorch.org/whl/cu124 backend
+services:
+  backend:
+    environment:
+      - DEVICE=auto
+      - NVIDIA_VISIBLE_DEVICES=all
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

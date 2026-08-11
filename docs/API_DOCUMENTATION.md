@@ -9,7 +9,7 @@ Every response uses the envelope `{ success, message, data }`.
 | Method | Path | Description |
 |---|---|---|
 | GET | `/health` | Health + database connectivity |
-| GET | `/info` | App info, supported models/datasets/attacks/defenses |
+| GET | `/info` | App info, supported models/datasets/attacks/defenses, active ML device |
 
 ## Models
 

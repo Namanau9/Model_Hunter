@@ -25,6 +25,7 @@ from app.evaluation.metrics import compute_metrics, robustness_score
 from app.models.registry import ModelRegistry
 from app.reports.generators import generate_csv, generate_html, generate_pdf
 from app.services import model_service
+from app.utils.device import get_device, gpu_execution, requires_pin_memory
 from app.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -43,6 +44,8 @@ def _build_defended_model(req: EvaluationRequest, device: str):
             train=True,
             batch_size=req.batch_size,
             limit=req.sample_limit or 64,
+            pin_memory=requires_pin_memory(device),
+            num_workers=get_settings().num_workers,
         )
         adv = AdversarialTraining(
             model,
@@ -77,7 +80,10 @@ def _build_defended_model(req: EvaluationRequest, device: str):
 def run_evaluation(req: EvaluationRequest) -> dict:
     """Execute a full evaluation and return a serializable result dict."""
     settings = get_settings()
+    device = get_device()
     torch.manual_seed(req.seed)
+    if device.type == "cuda":
+        torch.cuda.manual_seed_all(req.seed)
     started = time.perf_counter()
 
     if not ModelRegistry.has(req.model_name):
@@ -90,12 +96,16 @@ def run_evaluation(req: EvaluationRequest) -> dict:
             f"Compatible: {ModelRegistry.compatible_models(req.dataset_name)}"
         )
 
-    model, defense_label = _build_defended_model(req, settings.device)
-    model.to(settings.device).eval()
+    model, defense_label = _build_defended_model(req, device)
+    model.to(device).eval()
 
     loader_cls = DatasetRegistry.get(req.dataset_name)
     test_loader = loader_cls.dataloader(
-        train=False, batch_size=req.batch_size, limit=req.sample_limit
+        train=False,
+        batch_size=req.batch_size,
+        limit=req.sample_limit,
+        pin_memory=requires_pin_memory(device),
+        num_workers=settings.num_workers,
     )
 
     params = req.attack_params.model_dump()
@@ -111,15 +121,16 @@ def run_evaluation(req: EvaluationRequest) -> dict:
             except Exception:
                 source_model = None
 
-    result = compute_metrics(
-        model,
-        attack,
-        test_loader,
-        device=settings.device,
-        limit=req.sample_limit,
-        epsilon=req.attack_params.epsilon,
-        source_model=source_model,
-    )
+    with gpu_execution():
+        result = compute_metrics(
+            model,
+            attack,
+            test_loader,
+            device=device,
+            limit=req.sample_limit,
+            epsilon=req.attack_params.epsilon,
+            source_model=source_model,
+        )
     score, klass = robustness_score(result)
     result.robustness_score = score
     result.robustness_class = klass

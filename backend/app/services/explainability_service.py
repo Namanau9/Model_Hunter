@@ -24,29 +24,50 @@ def run_explainability(
     if technique not in ("gradcam", "shap"):
         raise ValueError("technique must be 'gradcam' or 'shap'")
 
+    from app.utils.device import get_device, requires_pin_memory
+
+    device = get_device()
     model = model_service.load_model(model_name, dataset_name)
     loader_cls = DatasetRegistry.get(dataset_name)
-    loader = loader_cls.dataloader(train=False, batch_size=64, limit=sample_index + 1)
+    loader = loader_cls.dataloader(
+        train=False,
+        batch_size=64,
+        limit=sample_index + 1,
+        pin_memory=requires_pin_memory(device),
+        num_workers=settings.num_workers,
+    )
 
-    if technique == "gradcam":
-        result = generate_gradcam(
+    def _generate(dev):
+        """Run the requested technique on a given device."""
+        if technique == "gradcam":
+            return generate_gradcam(
+                model,
+                dataset_name,
+                loader,
+                model_name,
+                sample_index=sample_index,
+                class_index=class_index,
+                device=dev,
+            )
+        return generate_shap(
             model,
             dataset_name,
             loader,
-            model_name,
             sample_index=sample_index,
             class_index=class_index,
-            device=settings.device,
+            device=dev,
         )
-    else:
-        result = generate_shap(
-            model,
-            dataset_name,
-            loader,
-            sample_index=sample_index,
-            class_index=class_index,
-            device=settings.device,
-        )
+
+    try:
+        result = _generate(device)
+    except Exception:
+        # GradCAM (Captum) and SHAP are not reliable on every accelerator
+        # (notably MPS). Retry on CPU before surfacing the error.
+        if device.type in ("cuda", "mps"):
+            logger.warning("Explainability failed on %s; retrying on CPU", device.type)
+            result = _generate("cpu")
+        else:
+            raise
 
     # Store the heatmap + image as PNG bytes for the frontend.
     import base64

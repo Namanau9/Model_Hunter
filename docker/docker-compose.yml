@@ -11,7 +11,7 @@ services:
       - ./../pretrained_models:/app/pretrained_models
       - ./../reports:/app/reports
     environment:
-      - DEVICE=cpu
+      - DEVICE=auto
       - DATABASE_URL=sqlite:////app/backend/modelhunter.db
 
   frontend:

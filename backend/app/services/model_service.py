@@ -9,6 +9,7 @@ import torch
 from app.config.settings import get_settings
 from app.datasets.registry import DatasetRegistry
 from app.models.registry import ModelRegistry
+from app.utils.device import get_device, gpu_execution, requires_pin_memory
 from app.utils.logging import get_logger
 from app.utils.security import safe_load_state_dict, validate_model_upload
 
@@ -102,41 +103,56 @@ def train_model(
     batch_size: int = 64,
     learning_rate: float = 0.001,
     limit: int | None = None,
-    device: str = "cpu",
+    device: str | torch.device | None = None,
 ) -> dict:
-    """Train a model on a dataset and persist the checkpoint."""
+    """Train a model on a dataset and persist the checkpoint.
+
+    ``device`` defaults to the runtime-resolved device (auto / settings).
+    """
     if model_name not in ModelRegistry.compatible_models(dataset_name):
         raise ValueError(
             f"Model '{model_name}' is not compatible with dataset '{dataset_name}'. "
             f"Compatible: {ModelRegistry.compatible_models(dataset_name)}"
         )
+    dev = torch.device(device) if device else get_device()
+    pin_memory = requires_pin_memory(dev)
+    workers = get_settings().num_workers
     loader_cls = DatasetRegistry.get(dataset_name)
-    train_loader = loader_cls.dataloader(train=True, batch_size=batch_size, limit=limit)
-    test_loader = loader_cls.dataloader(train=False, batch_size=batch_size, limit=min(200, limit or 200))
+    train_loader = loader_cls.dataloader(
+        train=True, batch_size=batch_size, limit=limit, pin_memory=pin_memory, num_workers=workers,
+    )
+    test_loader = loader_cls.dataloader(
+        train=False, batch_size=batch_size, limit=min(200, limit or 200),
+        pin_memory=pin_memory, num_workers=workers,
+    )
 
-    model = build_model(model_name, dataset_name).to(device)
+    if dev.type == "cuda":
+        torch.cuda.manual_seed_all(get_settings().seed)
+
+    model = build_model(model_name, dataset_name).to(dev)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     loss_fn = torch.nn.CrossEntropyLoss()
-    model.train()
 
-    steps = 0
-    for _ in range(epochs):
-        for x, y in train_loader:
-            x, y = x.to(device), y.to(device)
-            optimizer.zero_grad()
-            out = model(x)
-            loss = loss_fn(out, y)
-            loss.backward()
-            optimizer.step()
-            steps += 1
+    with gpu_execution():
+        steps = 0
+        model.train()
+        for _ in range(epochs):
+            for x, y in train_loader:
+                x, y = x.to(dev), y.to(dev)
+                optimizer.zero_grad()
+                out = model(x)
+                loss = loss_fn(out, y)
+                loss.backward()
+                optimizer.step()
+                steps += 1
 
-    model.eval()
-    correct = total = 0
-    with torch.no_grad():
-        for x, y in test_loader:
-            x, y = x.to(device), y.to(device)
-            correct += (model(x).argmax(dim=1) == y).sum().item()
-            total += y.size(0)
+        model.eval()
+        correct = total = 0
+        with torch.no_grad():
+            for x, y in test_loader:
+                x, y = x.to(dev), y.to(dev)
+                correct += (model(x).argmax(dim=1) == y).sum().item()
+                total += y.size(0)
     accuracy = correct / max(total, 1) * 100.0
 
     path = checkpoint_path(model_name, dataset_name)
