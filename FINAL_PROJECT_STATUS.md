@@ -24,11 +24,13 @@ working, tested, integrated application.
   Vite production build succeeds.
 - **Backend**: FastAPI, layered service architecture, modular registries,
   security hardening.
-- **Docker**: backend, frontend (nginx proxy), docker-compose.
+- **Docker**: backend, frontend (nginx proxy), docker-compose, GPU override.
+- **GPU support**: NVIDIA CUDA / Apple Silicon MPS / CPU with auto-detection
+  (`DEVICE=auto`) and graceful fallback; device telemetry on the Settings page.
 - **Docs**: README + docs/ suite + CHANGELOG + audit/status.
 
 ## Tests Executed
-- `python -m pytest ../tests/backend -q` → **12 passed**
+- `python -m pytest ../tests/backend -q` → **27 passed**
 - Frontend `npm run build` → succeeds (`dist/` generated)
 - Backend startup → 21 routes registered, `/api/health` returns OK
 - End-to-end HTTP: `/evaluation/run`, `/evaluation/benchmark`,
@@ -53,10 +55,9 @@ cd backend && python -m pytest ../tests/backend -q
 ```
 
 ## Known Limitations
-- CPU-only by default; CIFAR-10/GTSRB checkpoints were trained on small
-  subsets (400 samples, 2 epochs) purely to make all models load — accuracies
-  are low and not benchmarking-grade. Train with more data/epochs for
-  production numbers.
+- CIFAR-10/GTSRB checkpoints were trained on small subsets (400 samples,
+  2 epochs) purely to make all models load — accuracies are low and not
+  benchmarking-grade. Train with more data/epochs for production numbers.
 - ZOO and HopSkipJump are simplified gradient-free / decision-based
   implementations (real results, reduced query budgets for speed).
 - Ensemble on MNIST contains a single compatible model (CNN); on CIFAR-10 /
@@ -67,4 +68,4 @@ cd backend && python -m pytest ../tests/backend -q
 
 ## Remaining Issues
 - None blocking. Optional: larger training runs for realistic accuracy;
-  wire uploaded checkpoints into evaluation; GPU support via `DEVICE=cuda`.
+  wire uploaded checkpoints into evaluation.
