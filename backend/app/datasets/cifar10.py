@@ -42,11 +42,25 @@ class CIFAR10Loader:
             transform=transform,
         )
 
-    def dataloader(self, train: bool = True, batch_size: int = 64, limit: int | None = None):
+    def dataloader(
+        self,
+        train: bool = True,
+        batch_size: int = 64,
+        limit: int | None = None,
+        pin_memory: bool = False,
+        num_workers: int | None = None,
+    ):
         ds = self.load(train)
         if limit is not None:
             ds = torch.utils.data.Subset(ds, range(min(limit, len(ds))))
-        return DataLoader(ds, batch_size=batch_size, shuffle=train, num_workers=0)
+        workers = num_workers if num_workers is not None else get_settings().num_workers
+        return DataLoader(
+            ds,
+            batch_size=batch_size,
+            shuffle=train,
+            num_workers=workers,
+            pin_memory=pin_memory,
+        )
 
 
 def unnormalize_cifar10(t: torch.Tensor) -> torch.Tensor:

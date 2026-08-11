@@ -12,7 +12,7 @@ fabricated data.
   <img src="https://img.shields.io/badge/Backend-FastAPI-009688" alt="FastAPI" />
   <img src="https://img.shields.io/badge/Frontend-React%20%2B%20MUI-61DAFB" alt="React" />
   <img src="https://img.shields.io/badge/ML-PyTorch-EE4C2C" alt="PyTorch" />
-  <img src="https://img.shields.io/badge/Tests-15%20passing-brightgreen" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-27%20passing-brightgreen" alt="Tests" />
 </p>
 
 ---
@@ -43,6 +43,8 @@ fabricated data.
   confidence shift, transferability index, execution time, robustness score
 - **Reports** — PDF, HTML, CSV (downloadable from the Reports page)
 - **Persistence** — SQLite + SQLAlchemy evaluation history
+- **GPU support** — NVIDIA CUDA, Apple Silicon MPS, or CPU with automatic
+  detection (`DEVICE=auto`) and graceful fallback; GPU telemetry on the Settings page
 
 > ⚙️ **All metrics come from real execution.** No results are hardcoded or
 > simulated — every dashboard value is computed by running the actual model,
@@ -59,6 +61,7 @@ fabricated data.
 | **Machine Learning** | PyTorch, Captum, SHAP |
 | **Database** | SQLite, SQLAlchemy ORM |
 | **Reports** | Matplotlib, ReportLab |
+| **Compute** | PyTorch on NVIDIA CUDA / Apple MPS / CPU (auto-detect) |
 | **Infra** | Docker, Docker Compose, Nginx |
 
 ---
@@ -114,6 +117,16 @@ python scripts/train_all.py --epochs 2 --limit 400      # train all models
 ```bash
 docker compose -f docker/docker-compose.yml up --build
 ```
+
+### Docker with GPU
+
+```bash
+# Requires the NVIDIA Container Toolkit on the host, then:
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.gpu.yml up --build
+```
+
+See [docs/DEPLOYMENT.md#gpu-support](docs/DEPLOYMENT.md#gpu-support) for the CUDA
+wheel build and toolkit setup.
 
 | Service | URL |
 |---|---|

@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.1.0 — GPU support
+
+### Added
+- Device resolution layer (`app/utils/device.py`): `DEVICE=auto` picks
+  CUDA > MPS > CPU with a graceful CPU fallback; supports `cpu`, `cuda`,
+  `cuda:<idx>`, `mps` preferences
+- Cached `get_device()` + telemetry `get_device_info()` (name, VRAM, CUDA,
+  cuDNN, torch version)
+- ML pipelines now run on the resolved accelerator: model training, evaluation,
+  attack/defense engines, and explainability (with automatic CPU retry on
+  accelerators Captum/SHAP can't drive, e.g. MPS)
+- `pin_memory` on CUDA DataLoaders + configurable `NUM_WORKERS` (default 0)
+- CUDA seeding (`torch.cuda.manual_seed_all`) for reproducible runs
+- `gpu_execution()` lock serializes heavy accelerator jobs to prevent OOM
+- `/api/info` returns a `device` block; new "Compute Accelerator" panel on the
+  Settings page
+- GPU deployment: `docker/docker-compose.gpu.yml` (NVIDIA reservation) and an
+  opt-in `TORCH_INDEX_URL` build arg for CUDA wheels in `Dockerfile.backend`
+- Device resolution tests (`tests/backend/test_device.py`, 12 new tests)
+
+### Changed
+- `.env.example`: `DEVICE=auto`, `NUM_WORKERS=0`
+- `docker-compose.yml` backend device default `cpu` → `auto`
+
 ## 1.0.0 — Initial production release
 
 ### Added

@@ -1,11 +1,20 @@
 # Backend image for ModelHunter
-FROM python:3.11-slim
+# CPU-only by default. For CUDA GPU support build with a PyTorch index URL:
+#   docker build -f docker/Dockerfile.backend --build-arg TORCH_INDEX_URL=https://download.pytorch.org/whl/cu124 .
+ARG BASE_IMAGE=python:3.11-slim
+FROM ${BASE_IMAGE}
+ARG TORCH_INDEX_URL=
 
 WORKDIR /app
 
-# Install core deps first for layer caching
+# Install core deps first for layer caching.
+# When TORCH_INDEX_URL is set (CUDA build), reinstall torch/torchvision from
+# the PyTorch index so the image gets the CUDA-enabled wheels.
 COPY backend/requirements.txt requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && if [ -n "$TORCH_INDEX_URL" ]; then \
+         pip install --no-cache-dir --index-url "$TORCH_INDEX_URL" --force-reinstall torch torchvision; \
+       fi
 
 # Copy backend source and top-level dirs the backend needs at runtime
 COPY backend/ backend/
@@ -16,6 +25,8 @@ COPY results/ results/
 COPY .env.example .env
 
 ENV PYTHONPATH=/app/backend
+# Reduces CUDA fragmentation for long-running adversarial ML jobs.
+ENV PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 WORKDIR /app/backend
 
 EXPOSE 8000

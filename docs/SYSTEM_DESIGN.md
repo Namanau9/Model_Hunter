@@ -47,6 +47,14 @@ SQLite via SQLAlchemy ORM. Tables:
 ### Reports
 `reports/generators.py` produces CSV, HTML and PDF files in `reports/`.
 
+### Device Management
+`utils/device.py` resolves the ML accelerator at runtime from `DEVICE`
+(`auto | cpu | cuda | cuda:<idx> | mps`). `auto` selects CUDA → MPS → CPU,
+falling back to CPU when the requested accelerator is unavailable. Services use
+the resolved device for model placement, pinned-memory loaders (CUDA), CUDA
+seeding, and serialize heavy jobs via `gpu_execution()` to avoid OOM. Active
+device telemetry is exposed through `/api/info` and the Settings UI.
+
 ## Robustness Score (per SRS)
 
 ```

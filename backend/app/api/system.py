@@ -10,6 +10,7 @@ from app.models.registry import ModelRegistry
 from app.datasets.registry import DatasetRegistry
 from app.attacks.registry import AttackRegistry
 from app.defenses.registry import DefenseRegistry
+from app.utils.device import get_device_info
 
 router = APIRouter()
 
@@ -41,6 +42,7 @@ def info():
             "datasets": DatasetRegistry.names(),
             "attacks": AttackRegistry.names(),
             "defenses": DefenseRegistry.names,
+            "device": get_device_info(),
             "architecture": [
                 "React Frontend",
                 "FastAPI API",
