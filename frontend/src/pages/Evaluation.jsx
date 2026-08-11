@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import {
-  Grid, Card, CardContent, Typography, Button, TextField, MenuItem, Select, InputLabel,
-  FormControl, Box, Alert, CircularProgress, Paper,
+  Grid, Typography, Button, TextField, MenuItem, Select, InputLabel,
+  FormControl, Alert, CircularProgress, Paper, Box,
 } from "@mui/material";
-import { apiGet, apiPost } from "../api/client";
+import { useToast } from "../contexts/ToastContext";
+import { apiPost } from "../api/client";
+import PageShell from "../components/PageShell";
+import Panel from "../components/Panel";
 import MetricTable from "../components/MetricTable";
 import RobustnessGauge from "../components/RobustnessGauge";
 
@@ -11,6 +14,7 @@ const compatible = { cifar10: ["resnet18", "mobilenetv2"], gtsrb: ["resnet18", "
 const defenses = ["none", "adversarial_training", "ensemble", "input_preprocessing"];
 
 export default function Evaluation() {
+  const { notify } = useToast();
   const [model, setModel] = useState("cnn");
   const [dataset, setDataset] = useState("mnist");
   const [attack, setAttack] = useState("fgsm");
@@ -25,8 +29,15 @@ export default function Evaluation() {
     setModel(compatible[dataset][0]);
   }, [dataset]);
 
+  const reset = () => {
+    setErr(null);
+    setResult(null);
+  };
+
   const run = async () => {
-    setRunning(true); setErr(null); setResult(null);
+    setRunning(true);
+    setErr(null);
+    setResult(null);
     try {
       const r = await apiPost("/evaluation/run", {
         model_name: model, dataset_name: dataset, attack_name: attack,
@@ -35,25 +46,30 @@ export default function Evaluation() {
         sample_limit: Number(samples), batch_size: 64,
       });
       setResult(r.data);
-    } catch (e) { setErr(e.response?.data?.detail || e.message); }
-    finally { setRunning(false); }
-  };
-
-  const refreshHistory = () => {
-    // placeholder to keep single-page state; history is on Dashboard
+      notify(
+        `Evaluation complete: robustness ${r.data.metrics.robustness_score.toFixed(1)} (${r.data.metrics.robustness_class})`,
+        "success"
+      );
+    } catch (e) {
+      const detail = e.response?.data?.detail || e.message;
+      setErr(detail);
+      notify(`Evaluation failed: ${detail}`, "error");
+    } finally {
+      setRunning(false);
+    }
   };
 
   return (
-    <Box>
-      <Typography variant="h4" sx={{ color: "#00E5FF" }}>Evaluation</Typography>
-      <Typography color="text.secondary" sx={{ mb: 3 }}>
-        Execute an attack against a model and compute all security metrics.
-      </Typography>
-
-      <Grid container spacing={3}>
+    <>
+      <PageShell
+        eyebrow="Execution"
+        title="Evaluation"
+        subtitle="Execute an attack against a model and compute all security metrics."
+        onRefresh={reset}
+      />
+      <Grid container spacing={3} className="mh-reveal">
         <Grid item xs={12} md={4}>
-          <Card sx={{ p: 2 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>Run Configuration</Typography>
+          <Panel eyebrow="Configuration" title="Run Configuration" accent="#27E0FF">
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>Dataset</InputLabel>
               <Select value={dataset} label="Dataset" onChange={(e) => setDataset(e.target.value)}>
@@ -80,18 +96,24 @@ export default function Evaluation() {
             </FormControl>
             <TextField label="Epsilon" type="number" value={epsilon} onChange={(e) => setEpsilon(e.target.value)} fullWidth sx={{ mb: 2 }} />
             <TextField label="Sample Limit" type="number" value={samples} onChange={(e) => setSamples(e.target.value)} fullWidth sx={{ mb: 2 }} />
-            <Button variant="contained" fullWidth onClick={run} disabled={running}>
-              {running ? <CircularProgress size={22} color="inherit" /> : "Run Evaluation"}
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={run}
+              disabled={running}
+              startIcon={running ? <CircularProgress size={20} color="inherit" /> : null}
+            >
+              {running ? "Running Evaluation..." : "Run Evaluation"}
             </Button>
             {err && <Alert severity="error" sx={{ mt: 2 }}>{err}</Alert>}
-          </Card>
+          </Panel>
         </Grid>
 
         <Grid item xs={12} md={8}>
           {result ? (
             <Grid container spacing={2}>
               <Grid item xs={12} md={4}>
-                <Paper variant="outlined">
+                <Paper variant="outlined" sx={{ borderRadius: 2 }}>
                   <RobustnessGauge score={result.metrics.robustness_score} klass={result.metrics.robustness_class} />
                 </Paper>
               </Grid>
@@ -99,23 +121,23 @@ export default function Evaluation() {
                 <MetricTable metrics={result.metrics} />
               </Grid>
               <Grid item xs={12}>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" className="mh-mono">
                   Evaluation #{result.evaluation_id} · {result.model}/{result.dataset} · {result.attack}
                   {result.defense !== "none" && ` + ${result.defense}`} · total time {result.total_time}s
                 </Typography>
               </Grid>
             </Grid>
           ) : (
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary">
+            <Panel corners eyebrow="Results" title="Evaluation Output" sx={{ height: "100%", minHeight: 280 }}>
+              <Box display="flex" alignItems="center" justifyContent="center" sx={{ py: 5 }}>
+                <Typography color="text.secondary" textAlign="center">
                   Configure and run an evaluation to view real metrics (no fabricated data).
                 </Typography>
-              </CardContent>
-            </Card>
+              </Box>
+            </Panel>
           )}
         </Grid>
       </Grid>
-    </Box>
+    </>
   );
 }

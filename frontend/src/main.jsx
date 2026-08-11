@@ -2,8 +2,11 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { ThemeProvider, CssBaseline } from "@mui/material";
+import "./index.css";
 import App from "./App";
 import { AppProvider } from "./contexts/AppContext";
+import { ToastProvider } from "./contexts/ToastContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { cyberTheme } from "./theme/theme";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -12,7 +15,11 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <CssBaseline />
       <BrowserRouter>
         <AppProvider>
-          <App />
+          <ToastProvider>
+            <ErrorBoundary>
+              <App />
+            </ErrorBoundary>
+          </ToastProvider>
         </AppProvider>
       </BrowserRouter>
     </ThemeProvider>
