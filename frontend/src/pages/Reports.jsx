@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Grid, Card, CardContent, Typography, Box, Button, Stack, Alert, Tooltip } from "@mui/material";
+import { Grid, Typography, Box, Button, Stack, Alert, Tooltip, Card, CardContent } from "@mui/material";
 import DescriptionIcon from "@mui/icons-material/Description";
 import { useApp } from "../contexts/AppContext";
 import { useToast } from "../contexts/ToastContext";
 import { apiGet } from "../api/client";
 import PageShell from "../components/PageShell";
+import Panel from "../components/Panel";
 
-// Trigger a browser download of the requested report file via the backend.
-// Throws on failure so the caller can surface a toast.
 async function downloadReport(evaluationId, fmt, fallbackName) {
   if (!evaluationId) return null;
   const res = await fetch(`/api/reports/${evaluationId}/download/${fmt}`, {
@@ -44,12 +43,7 @@ function DownloadButtons({ id, name }) {
     <Box sx={{ display: "flex", gap: 0.5 }}>
       {["html", "csv", "pdf"].map((fmt) => (
         <Tooltip key={fmt} title={`Download ${fmt.toUpperCase()}`}>
-          <Button
-            size="small"
-            variant="outlined"
-            color="secondary"
-            onClick={() => handleDownload(fmt)}
-          >
+          <Button size="small" variant="outlined" color="secondary" onClick={() => handleDownload(fmt)}>
             {fmt.toUpperCase()}
           </Button>
         </Tooltip>
@@ -82,28 +76,25 @@ export default function Reports() {
   return (
     <>
       <PageShell
+        eyebrow="Artifacts"
         title="Reports"
         subtitle="PDF, HTML and CSV benchmarking reports generated from real evaluations. Use the buttons to download each format."
         onRefresh={load}
       />
-
-      <Grid container spacing={3}>
+      <Grid container spacing={3} className="mh-reveal">
         <Grid item xs={12} md={5}>
-          <Card sx={{ p: 2 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>Evaluation History</Typography>
-            <Stack spacing={1}>
-              {history.length === 0 && (
-                <Alert severity="info">No evaluations yet. Run one from the Evaluation page to generate reports.</Alert>
-              )}
+          <Panel corners eyebrow="Benchmarks" title="Evaluation History">
+            {history.length === 0 && <Alert severity="info">No evaluations yet. Run one from the Evaluation page.</Alert>}
+            <Stack spacing={1.25}>
               {history.map((h) => (
                 <Card key={h.id} variant="outlined">
-                  <CardContent sx={{ py: 1 }}>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}>
+                  <CardContent sx={{ py: 1.25 }}>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
                       <Box>
-                        <Typography variant="subtitle2">
+                        <Typography variant="subtitle2" className="mh-mono">
                           #{h.id} · {h.model}/{h.dataset} · {h.attack} {h.defense !== "none" && `+ ${h.defense}`}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" className="mh-mono" sx={{ mt: 0.25 }}>
                           Robustness: {h.robustness_score.toFixed(1)} ({h.robustness_class})
                         </Typography>
                       </Box>
@@ -113,39 +104,34 @@ export default function Reports() {
                 </Card>
               ))}
             </Stack>
-          </Card>
+          </Panel>
         </Grid>
 
         <Grid item xs={12} md={7}>
-          <Card sx={{ p: 2 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              Generated Report Files
-            </Typography>
+          <Panel corners eyebrow="Files" title="Generated Report Files">
             {reports.length === 0 ? (
               <Typography color="text.secondary">No reports generated yet.</Typography>
             ) : (
-              <Stack spacing={1}>
+              <Stack spacing={1.25}>
                 {reports.map((r) => (
                   <Card key={r.name} variant="outlined">
-                    <CardContent sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", py: 1 }}>
+                    <CardContent sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", py: 1.25 }}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <DescriptionIcon color="secondary" />
+                        <DescriptionIcon sx={{ color: "#6D7CFF" }} />
                         <Box>
-                          <Typography variant="subtitle2">{r.name}</Typography>
+                          <Typography variant="subtitle2" className="mh-mono">{r.name}</Typography>
                           <Typography variant="body2" color="text.secondary">{(r.size_bytes / 1024).toFixed(1)} KB</Typography>
                         </Box>
                       </Box>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <DownloadButtons id={r.evaluation_id} name={r.name} />
-                      </Box>
+                      <DownloadButtons id={r.evaluation_id} name={r.name} />
                     </CardContent>
                   </Card>
                 ))}
               </Stack>
             )}
-          </Card>
+          </Panel>
         </Grid>
-            </Grid>
+      </Grid>
     </>
   );
 }

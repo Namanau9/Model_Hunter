@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import {
-  Grid, Card, CardContent, Typography, Button, TextField, MenuItem, Select, InputLabel,
-  FormControl, Alert, CircularProgress, Paper,
+  Grid, Typography, Button, TextField, MenuItem, Select, InputLabel,
+  FormControl, Alert, CircularProgress, Paper, Box,
 } from "@mui/material";
 import { useToast } from "../contexts/ToastContext";
 import { apiPost } from "../api/client";
 import PageShell from "../components/PageShell";
+import Panel from "../components/Panel";
 import MetricTable from "../components/MetricTable";
 import RobustnessGauge from "../components/RobustnessGauge";
 
@@ -58,18 +59,17 @@ export default function Evaluation() {
     }
   };
 
-    return (
+  return (
     <>
       <PageShell
+        eyebrow="Execution"
         title="Evaluation"
         subtitle="Execute an attack against a model and compute all security metrics."
         onRefresh={reset}
       />
-
-      <Grid container spacing={3}>
+      <Grid container spacing={3} className="mh-reveal">
         <Grid item xs={12} md={4}>
-          <Card sx={{ p: 2 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>Run Configuration</Typography>
+          <Panel eyebrow="Configuration" title="Run Configuration" accent="#27E0FF">
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>Dataset</InputLabel>
               <Select value={dataset} label="Dataset" onChange={(e) => setDataset(e.target.value)}>
@@ -96,24 +96,24 @@ export default function Evaluation() {
             </FormControl>
             <TextField label="Epsilon" type="number" value={epsilon} onChange={(e) => setEpsilon(e.target.value)} fullWidth sx={{ mb: 2 }} />
             <TextField label="Sample Limit" type="number" value={samples} onChange={(e) => setSamples(e.target.value)} fullWidth sx={{ mb: 2 }} />
-                        <Button
+            <Button
               variant="contained"
               fullWidth
               onClick={run}
               disabled={running}
               startIcon={running ? <CircularProgress size={20} color="inherit" /> : null}
             >
-              {running ? "Running..." : "Run Evaluation"}
+              {running ? "Running Evaluation..." : "Run Evaluation"}
             </Button>
             {err && <Alert severity="error" sx={{ mt: 2 }}>{err}</Alert>}
-          </Card>
+          </Panel>
         </Grid>
 
         <Grid item xs={12} md={8}>
           {result ? (
             <Grid container spacing={2}>
               <Grid item xs={12} md={4}>
-                <Paper variant="outlined">
+                <Paper variant="outlined" sx={{ borderRadius: 2 }}>
                   <RobustnessGauge score={result.metrics.robustness_score} klass={result.metrics.robustness_class} />
                 </Paper>
               </Grid>
@@ -121,22 +121,22 @@ export default function Evaluation() {
                 <MetricTable metrics={result.metrics} />
               </Grid>
               <Grid item xs={12}>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" className="mh-mono">
                   Evaluation #{result.evaluation_id} · {result.model}/{result.dataset} · {result.attack}
                   {result.defense !== "none" && ` + ${result.defense}`} · total time {result.total_time}s
                 </Typography>
               </Grid>
             </Grid>
           ) : (
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary">
+            <Panel corners eyebrow="Results" title="Evaluation Output" sx={{ height: "100%", minHeight: 280 }}>
+              <Box display="flex" alignItems="center" justifyContent="center" sx={{ py: 5 }}>
+                <Typography color="text.secondary" textAlign="center">
                   Configure and run an evaluation to view real metrics (no fabricated data).
                 </Typography>
-              </CardContent>
-            </Card>
+              </Box>
+            </Panel>
           )}
-                </Grid>
+        </Grid>
       </Grid>
     </>
   );
