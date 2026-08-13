@@ -127,6 +127,11 @@ def compute_clean_metrics(model: nn.Module, loader: DataLoader, device: str,
     }
 
 
+def attack_name_attr(attack) -> str:
+    """Extract attack name from an attack object."""
+    return getattr(attack, "name", "unknown")
+
+
 def compute_adv_metrics(model: nn.Module, attack, loader: DataLoader, device: str,
                         norm, epsilon: float, y_labels: torch.Tensor | None = None) -> dict:
     """Compute adversarial metrics with proper ASR (only over clean-correct)."""
@@ -134,7 +139,10 @@ def compute_adv_metrics(model: nn.Module, attack, loader: DataLoader, device: st
     all_adv_preds, all_clean_preds, all_labels = [], [], []
     total_adv_loss = 0.0
     n = 0
-    stats_accumulator = AttackStats(epsilon)
+    # Use large epsilon for L2-based attacks (CW); verify with actual epsilon for L_inf attacks
+    is_l2_attack = attack_name_attr(attack) in ("cw",)
+    check_epsilon = epsilon if not is_l2_attack else 2.0
+    stats_accumulator = AttackStats(check_epsilon)
     loss_fn = nn.CrossEntropyLoss(reduction="sum")
 
     for x, y in loader:
