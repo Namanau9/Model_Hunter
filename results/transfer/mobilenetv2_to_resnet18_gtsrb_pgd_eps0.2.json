@@ -1,0 +1,27 @@
+{
+  "source_model": "mobilenetv2",
+  "target_model": "resnet18",
+  "dataset": "gtsrb",
+  "attack": "pgd",
+  "epsilon": 0.2,
+  "n_samples": 12630,
+  "source_clean_accuracy": 72.6366,
+  "source_whitebox_asr": 100.0,
+  "target_clean_accuracy": 81.8182,
+  "target_transferred_asr": 58.3715,
+  "transfer_rate": 58.3715,
+  "perturbation_stats": {
+    "n_samples": 37890,
+    "mean_linf": 0.2,
+    "median_linf": 0.2,
+    "max_linf": 0.2,
+    "mean_l2": 3.769853,
+    "median_l2": 3.824381,
+    "max_l2": 4.591701,
+    "epsilon": 0.2,
+    "epsilon_violated": false,
+    "asr_correct_denominator": 9173,
+    "asr_successes": 9173,
+    "attack_success_rate": 100.0
+  }
+}

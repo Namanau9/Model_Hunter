@@ -1,0 +1,18 @@
+{
+  "model": "resnet18",
+  "dataset": "cifar10",
+  "n_samples_evaluated": 10000,
+  "n_samples_gradcam": 200,
+  "collapsed_or_invalid_rate": 2.5,
+  "attribution_shift_mean": 0.35922134,
+  "attribution_shift_std": 0.1252096,
+  "attribution_shift_median": 0.36148441,
+  "attribution_shift_ci95": [
+    0.13120857,
+    0.58633184
+  ],
+  "mannwhitney_u_statistic": 36323.0,
+  "mannwhitney_u_p_value": 0.0,
+  "ttest_statistic": 20.4337,
+  "ttest_p_value": 0.0
+}

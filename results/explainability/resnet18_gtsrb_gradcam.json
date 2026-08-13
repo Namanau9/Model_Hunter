@@ -1,0 +1,18 @@
+{
+  "model": "resnet18",
+  "dataset": "gtsrb",
+  "n_samples_evaluated": 12630,
+  "n_samples_gradcam": 200,
+  "collapsed_or_invalid_rate": 26.0,
+  "attribution_shift_mean": 0.36840194,
+  "attribution_shift_std": 0.13317664,
+  "attribution_shift_median": 0.3641398,
+  "attribution_shift_ci95": [
+    0.11852626,
+    0.64552093
+  ],
+  "mannwhitney_u_statistic": 38632.0,
+  "mannwhitney_u_p_value": 0.0,
+  "ttest_statistic": 29.5469,
+  "ttest_p_value": 0.0
+}
