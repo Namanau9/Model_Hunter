@@ -1057,9 +1057,7 @@ def main() -> None:
     print("PHASE 5: Defense Evaluation")
     print("-" * 70)
 
-    # Use a small sample for defense evaluation (computational cost)
-    # Document this as a statistically justified subset
-    for model_name, dataset_name in [("cnn", "mnist"), ("resnet18", "cifar10"), ("mobilenetv2", "cifar10")]:
+    for model_name, dataset_name in MODEL_DATASET_PAIRS:
         key = f"{model_name}_{dataset_name}"
         if key not in trained_models:
             continue
@@ -1099,7 +1097,7 @@ def main() -> None:
         except Exception as e:
             logger.error(f"GradCAM failed for {model_name}/{dataset_name}: {e}")
 
-    for model_name, dataset_name in [("cnn", "mnist"), ("resnet18", "cifar10")]:
+    for model_name, dataset_name in MODEL_DATASET_PAIRS:
         key = f"{model_name}_{dataset_name}"
         if key not in trained_models:
             continue
