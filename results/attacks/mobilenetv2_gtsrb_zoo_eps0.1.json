@@ -1,0 +1,33 @@
+{
+  "n_samples": 12630,
+  "clean_accuracy": 72.6366,
+  "adversarial_accuracy": 76.6746,
+  "accuracy_drop": -4.038,
+  "attack_success_rate": 0.3706,
+  "adversarial_loss": 1.002773,
+  "num_clean_correct": 9174,
+  "num_attacks_succeeded": 34,
+  "num_attacks_failed": 9140,
+  "perturbation_stats": {
+    "n_samples": 37890,
+    "mean_linf": 0.03795,
+    "median_linf": 0.037506,
+    "max_linf": 0.062867,
+    "mean_l2": 0.352379,
+    "median_l2": 0.352451,
+    "max_l2": 0.382873,
+    "epsilon": 0.1,
+    "epsilon_violated": false,
+    "asr_correct_denominator": 9173,
+    "asr_successes": 34,
+    "attack_success_rate": 0.37
+  },
+  "model": "mobilenetv2",
+  "dataset": "gtsrb",
+  "attack": "zoo",
+  "epsilon": 0.1,
+  "attack_runtime_sec": 354.8979,
+  "runtime_per_sample_ms": 28.0996,
+  "phase": "full_test_set",
+  "computational_note": "Full test set (no subset)"
+}

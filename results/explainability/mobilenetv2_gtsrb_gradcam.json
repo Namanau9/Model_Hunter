@@ -1,0 +1,18 @@
+{
+  "model": "mobilenetv2",
+  "dataset": "gtsrb",
+  "n_samples_evaluated": 12630,
+  "n_samples_gradcam": 200,
+  "collapsed_or_invalid_rate": 38.5,
+  "attribution_shift_mean": 0.76999998,
+  "attribution_shift_std": 0.42083248,
+  "attribution_shift_median": 1.0,
+  "attribution_shift_ci95": [
+    0.0,
+    1.0
+  ],
+  "mannwhitney_u_statistic": 35400.0,
+  "mannwhitney_u_p_value": 0.0,
+  "ttest_statistic": 25.8112,
+  "ttest_p_value": 0.0
+}

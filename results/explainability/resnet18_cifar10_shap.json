@@ -1,0 +1,12 @@
+{
+  "model": "resnet18",
+  "dataset": "cifar10",
+  "n_samples": 100,
+  "n_successful": 100,
+  "n_failed": 0,
+  "method": "shap",
+  "fallback_count": 0,
+  "mean_attribution": 0.14250711,
+  "std_attribution": 0.12996955,
+  "sparsity_mean": 1.0
+}

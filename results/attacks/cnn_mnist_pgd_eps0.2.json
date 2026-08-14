@@ -1,0 +1,32 @@
+{
+  "n_samples": 10000,
+  "clean_accuracy": 98.18,
+  "adversarial_accuracy": 17.08,
+  "accuracy_drop": 81.1,
+  "attack_success_rate": 82.6034,
+  "adversarial_loss": 3.233272,
+  "num_clean_correct": 9818,
+  "num_attacks_succeeded": 8110,
+  "num_attacks_failed": 1708,
+  "perturbation_stats": {
+    "n_samples": 10000,
+    "mean_linf": 0.2,
+    "median_linf": 0.2,
+    "max_linf": 0.2,
+    "mean_l2": 3.889627,
+    "median_l2": 3.893315,
+    "max_l2": 4.397264,
+    "epsilon": 0.2,
+    "epsilon_violated": false,
+    "asr_correct_denominator": 9818,
+    "asr_successes": 8110,
+    "attack_success_rate": 82.6
+  },
+  "model": "cnn",
+  "dataset": "mnist",
+  "attack": "pgd",
+  "epsilon": 0.2,
+  "attack_runtime_sec": 6.3912,
+  "runtime_per_sample_ms": 0.6391,
+  "phase": "epsilon_sweep"
+}

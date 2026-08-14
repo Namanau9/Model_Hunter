@@ -1,0 +1,33 @@
+{
+  "n_samples": 12630,
+  "clean_accuracy": 88.5273,
+  "adversarial_accuracy": 76.7142,
+  "accuracy_drop": 11.8131,
+  "attack_success_rate": 14.8108,
+  "adversarial_loss": 0.917903,
+  "num_clean_correct": 11181,
+  "num_attacks_succeeded": 1656,
+  "num_attacks_failed": 9525,
+  "perturbation_stats": {
+    "n_samples": 37890,
+    "mean_linf": 0.099913,
+    "median_linf": 0.099952,
+    "max_linf": 0.1,
+    "mean_l2": 1.79442,
+    "median_l2": 1.816343,
+    "max_l2": 1.938161,
+    "epsilon": 0.1,
+    "epsilon_violated": false,
+    "asr_correct_denominator": 11182,
+    "asr_successes": 1656,
+    "attack_success_rate": 14.81
+  },
+  "model": "resnet18",
+  "dataset": "gtsrb",
+  "attack": "hopskipjump",
+  "epsilon": 0.1,
+  "attack_runtime_sec": 310.1423,
+  "runtime_per_sample_ms": 24.556,
+  "phase": "full_test_set",
+  "computational_note": "Full test set (no subset)"
+}

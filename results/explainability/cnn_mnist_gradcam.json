@@ -1,0 +1,18 @@
+{
+  "model": "cnn",
+  "dataset": "mnist",
+  "n_samples_evaluated": 10000,
+  "n_samples_gradcam": 200,
+  "collapsed_or_invalid_rate": 8.25,
+  "attribution_shift_mean": 0.02838073,
+  "attribution_shift_std": 0.02555045,
+  "attribution_shift_median": 0.02062047,
+  "attribution_shift_ci95": [
+    0.0,
+    0.10549641
+  ],
+  "mannwhitney_u_statistic": 17834.0,
+  "mannwhitney_u_p_value": 0.06099,
+  "ttest_statistic": -5.1425,
+  "ttest_p_value": 1e-06
+}
