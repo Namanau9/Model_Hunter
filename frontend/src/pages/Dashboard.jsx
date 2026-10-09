@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Grid, Typography, CircularProgress, Box, useTheme, Stack } from "@mui/material";
+import { Grid, Typography, CircularProgress, Box, useTheme, Stack, Button } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import { useNavigate } from "react-router-dom";
 import MemoryIcon from "@mui/icons-material/Memory";
 import StorageIcon from "@mui/icons-material/Storage";
 import SecurityIcon from "@mui/icons-material/Security";
 import ShieldIcon from "@mui/icons-material/Shield";
+import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import { useApp } from "../contexts/AppContext";
 import { useToast } from "../contexts/ToastContext";
 import { apiGet } from "../api/client";
@@ -24,6 +26,7 @@ function EmptyHint({ text }) {
 export default function Dashboard() {
   const { info, loading, tick, refresh } = useApp();
   const { notify } = useToast();
+  const navigate = useNavigate();
   const theme = useTheme();
   const cy = theme.palette.secondary.main;
   const [history, setHistory] = useState([]);
@@ -89,7 +92,19 @@ export default function Dashboard() {
         title="Dashboard"
         subtitle="Autonomous adversarial ML security evaluation — every value here is computed from real executions, never fabricated."
         onRefresh={() => { refresh(); fetchHistory(); }}
-        actions={<Typography variant="caption" className="mh-mono" color="text.secondary">LIVE TELEMETRY</Typography>}
+        actions={
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Typography variant="caption" className="mh-mono" color="text.secondary">LIVE TELEMETRY</Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => navigate("/demo")}
+              startIcon={<RocketLaunchIcon />}
+            >
+              Demo Mode
+            </Button>
+          </Stack>
+        }
       />
 
       <Grid container spacing={3} className="mh-reveal">

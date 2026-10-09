@@ -21,7 +21,11 @@ _STATE_EXT = ".pth"
 
 def checkpoint_path(model_name: str, dataset_name: str) -> Path:
     settings = get_settings()
-    return settings.models_dir / f"{model_name}_{dataset_name}{_STATE_EXT}"
+    full = settings.models_dir / f"{model_name}_{dataset_name}_full{_STATE_EXT}"
+    base = settings.models_dir / f"{model_name}_{dataset_name}{_STATE_EXT}"
+    if full.exists():
+        return full
+    return base
 
 
 def list_models() -> list[dict]:

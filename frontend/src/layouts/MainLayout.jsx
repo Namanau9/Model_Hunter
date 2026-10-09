@@ -17,6 +17,7 @@ import AssessmentIcon from "@mui/icons-material/Assessment";
 import InsightsIcon from "@mui/icons-material/Insights";
 import DescriptionIcon from "@mui/icons-material/Description";
 import SettingsIcon from "@mui/icons-material/Settings";
+import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import Logo from "../components/Logo";
 import { useApp } from "../contexts/AppContext";
 
@@ -27,6 +28,7 @@ const NAV = [
   { to: "/attacks", label: "Attack Center", icon: <SecurityIcon /> },
   { to: "/defenses", label: "Defense Center", icon: <ShieldIcon /> },
   { to: "/evaluation", label: "Evaluation", icon: <AssessmentIcon /> },
+  { to: "/demo", label: "Demo Mode", icon: <RocketLaunchIcon /> },
   { to: "/explainability", label: "Explainability", icon: <InsightsIcon /> },
   { to: "/reports", label: "Reports", icon: <DescriptionIcon /> },
   { to: "/settings", label: "Settings", icon: <SettingsIcon /> },
@@ -68,7 +70,7 @@ export default function MainLayout() {
   const drawer = (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, px: 2.5, py: 2.5 }}>
-        <Logo size={36} />
+        <Logo size={48} />
         <Box>
           <Typography
             variant="h6"
@@ -197,7 +199,7 @@ export default function MainLayout() {
               <MenuIcon />
             </IconButton>
           )}
-          <Logo size={30} sx={{ mr: 1.25, display: { md: "none" } }} />
+          <Logo size={38} sx={{ mr: 1.25, display: { md: "none" } }} />
           <Typography
             variant="h6"
             sx={{ flexGrow: 1, letterSpacing: 1, display: { md: "none" }, color: "secondary.main", fontWeight: 700 }}
