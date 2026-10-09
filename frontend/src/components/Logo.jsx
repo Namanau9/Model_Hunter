@@ -1,15 +1,20 @@
 import React from "react";
 
-/** ModelHunter placeholder logo. Points to /logo.svg (public asset). */
-export default function Logo({ size = 30, sx, className = "", ...rest }) {
+/** ModelHunter logo. Points to /logo.webp (public asset). */
+export default function Logo({ size = 45, sx, className = "", ...rest }) {
   return (
-    <span className={`mh-logo ${className}`} style={{ display: "inline-flex" }}>
+    <span className={`mh-logo ${className}`} style={{ display: "inline-flex", width: size, height: size }}>
       <img
-        src="/logo.svg"
+        src="/logo.webp"
         alt="ModelHunter logo"
-        width={size}
-        height={size}
-        style={{ display: "inline-block", verticalAlign: "middle", ...sx }}
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "inline-block",
+          verticalAlign: "middle",
+          objectFit: "contain",
+          ...sx,
+        }}
         {...rest}
       />
     </span>

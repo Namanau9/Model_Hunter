@@ -6,7 +6,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from app.api import attacks, datasets, defenses, evaluation, explainability, models, reports, system
+from app.api import attacks, datasets, demo, defenses, evaluation, explainability, models, reports, system
 from app.config.settings import get_settings
 from app.database.database import init_db
 from app.middleware.error_handler import register_exception_handlers
@@ -33,6 +33,7 @@ def create_app() -> FastAPI:
 
     api_prefix = settings.api_prefix
     app.include_router(system.router, prefix=api_prefix, tags=["system"])
+    app.include_router(demo.router, prefix=api_prefix)
     app.include_router(models.router, prefix=api_prefix)
     app.include_router(datasets.router, prefix=api_prefix)
     app.include_router(attacks.router, prefix=api_prefix)
