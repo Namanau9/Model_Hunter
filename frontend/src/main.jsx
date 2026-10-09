@@ -1,18 +1,16 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import { ThemeProvider, CssBaseline } from "@mui/material";
 import "./index.css";
 import App from "./App";
 import { AppProvider } from "./contexts/AppContext";
 import { ToastProvider } from "./contexts/ToastContext";
+import { UiPrefsProvider } from "./contexts/UiPrefsContext";
 import ErrorBoundary from "./components/ErrorBoundary";
-import { cyberTheme } from "./theme/theme";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <ThemeProvider theme={cyberTheme}>
-      <CssBaseline />
+    <UiPrefsProvider>
       <BrowserRouter>
         <AppProvider>
           <ToastProvider>
@@ -22,6 +20,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           </ToastProvider>
         </AppProvider>
       </BrowserRouter>
-    </ThemeProvider>
+    </UiPrefsProvider>
   </React.StrictMode>
 );

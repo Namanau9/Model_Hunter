@@ -1,22 +1,13 @@
 import React from "react";
 
-/** ModelHunter logo. Points to /logo.webp (public asset). */
-export default function Logo({ size = 45, sx, className = "", ...rest }) {
+/** ModelHunter mark: a reticle inside a square frame. Ink + one accent dot. */
+export default function Logo({ size = 32, title = "ModelHunter" }) {
   return (
-    <span className={`mh-logo ${className}`} style={{ display: "inline-flex", width: size, height: size }}>
-      <img
-        src="/logo.webp"
-        alt="ModelHunter logo"
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "inline-block",
-          verticalAlign: "middle",
-          objectFit: "contain",
-          ...sx,
-        }}
-        {...rest}
-      />
-    </span>
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" role="img" aria-label={title}>
+      <rect x="1" y="1" width="30" height="30" rx="6" style={{ fill: "var(--inverse)" }} />
+      <circle cx="16" cy="16" r="7.5" style={{ stroke: "var(--inverse-ink)" }} strokeWidth="1.6" />
+      <path d="M16 4.5v5M16 22.5v5M4.5 16h5M22.5 16h5" style={{ stroke: "var(--inverse-ink)" }} strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="16" cy="16" r="2.4" style={{ fill: "var(--accent)" }} />
+    </svg>
   );
 }

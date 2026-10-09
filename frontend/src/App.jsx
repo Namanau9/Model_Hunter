@@ -10,6 +10,7 @@ import Evaluation from "./pages/Evaluation";
 import Explainability from "./pages/Explainability";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import NotFound from "./pages/NotFound";
 import DemoMode from "./pages/DemoMode";
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/demo" element={<DemoMode />} />
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   );

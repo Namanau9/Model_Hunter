@@ -1,17 +1,31 @@
 import React, { useState } from "react";
 import {
-  Grid, Typography, Button, TextField, MenuItem, Select, InputLabel,
-  FormControl, Box, CircularProgress, Alert, Chip, Paper,
+  Box,
+  Button,
+  Grid,
+  TextField,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
+  Typography,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
 import { useToast } from "../contexts/ToastContext";
 import { apiPost } from "../api/client";
-import PageShell from "../components/PageShell";
-import Panel from "../components/Panel";
-import RobustnessGauge from "../components/RobustnessGauge";
-import MetricTable from "../components/MetricTable";
+import PageHeader from "../components/ui/PageHeader";
+import Panel, { FigCaption } from "../components/ui/Panel";
+import RobustnessRing from "../components/ui/RobustnessRing";
+import ClassBadge from "../components/ui/ClassBadge";
+import { statusVar, statusTextVar } from "../theme/tokens";
 
-const compatible = { cifar10: ["resnet18", "mobilenetv2"], gtsrb: ["resnet18", "mobilenetv2"], mnist: ["cnn"] };
-const attackOptions = ["fgsm", "pgd", "cw", "zoo", "hopskipjump"];
+const ROBUSTNESS_BANDS = [
+  { klass: "Weak", min: 0, max: 30 },
+  { klass: "Moderate", min: 30, max: 60 },
+  { klass: "Strong", min: 60, max: 100 },
+];
 
 function StepCard({ step, data }) {
   const m = data?.result?.metrics;
@@ -20,15 +34,17 @@ function StepCard({ step, data }) {
   const isAttack = step.step === 2;
   const isDefense = step.step >= 3;
 
-  let color = "#2563EB";
-  let bg = "rgba(37, 99, 235, 0.08)";
-  if (isBaseline) { color = "#2FD18A"; bg = "rgba(47, 209, 138, 0.08)"; }
-  else if (isAttack) { color = "#FF5C66"; bg = "rgba(255, 92, 102, 0.08)"; }
-  else if (isDefense && hasResult) {
-    const score = m.robustness_score;
-    if (score >= 60) { color = "#2FD18A"; bg = "rgba(47, 209, 138, 0.08)"; }
-    else if (score >= 30) { color = "#F9B44C"; bg = "rgba(249, 180, 76, 0.08)"; }
-    else { color = "#FF5C66"; bg = "rgba(255, 92, 102, 0.08)"; }
+  let color = "var(--blue)";
+  let bg = "color-mix(in srgb, var(--blue) 8%, transparent)";
+  if (isBaseline) {
+    color = "var(--status-strong-text)";
+    bg = "color-mix(in srgb, var(--status-strong) 8%, transparent)";
+  } else if (isAttack) {
+    color = "var(--accent)";
+    bg = "color-mix(in srgb, var(--accent) 8%, transparent)";
+  } else if (isDefense && hasResult) {
+    color = statusTextVar(m.robustness_class);
+    bg = `color-mix(in srgb, ${statusVar(m.robustness_class)} 8%, transparent)`;
   }
 
   return (
@@ -36,7 +52,7 @@ function StepCard({ step, data }) {
       sx={{
         p: 2,
         mb: 2,
-        borderRadius: 2,
+        borderRadius: "8px",
         border: `1px solid ${color}`,
         backgroundColor: bg,
         position: "relative",
@@ -44,44 +60,71 @@ function StepCard({ step, data }) {
       }}
     >
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 1.5 }}>
-        <Box>
-          <Chip
-            label={step.step}
-            size="small"
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+          <Box
+            component="span"
+            className="mh-mono"
             sx={{
-              mr: 1,
-              backgroundColor: color,
-              color: "#001014",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 22,
+              height: 22,
+              borderRadius: "4px",
               fontWeight: 700,
-              fontFamily: "var(--mh-font-mono)",
+              fontSize: "0.66rem",
+              backgroundColor: color,
+              color: "var(--inverse-ink)",
             }}
-          />
-          <Typography variant="overline" sx={{ color, fontWeight: 600, verticalAlign: "middle" }}>
+          >
+            {step.step}
+          </Box>
+          <Typography variant="overline" sx={{ color, fontWeight: 600, textTransform: "none", fontSize: "0.68rem", letterSpacing: "0.04em" }}>
             {step.label}
           </Typography>
         </Box>
         {step.result?.defense && (
-          <Chip
-            label={step.result.defense === "none" ? "no defense" : step.result.defense}
-            size="small"
-            variant="outlined"
-            sx={{ color: color, borderColor: color }}
-          />
+          <Box
+            component="span"
+            className="mh-mono"
+            sx={{
+              px: 0.9,
+              py: 0.25,
+              borderRadius: "4px",
+              fontSize: "0.68rem",
+              fontWeight: 500,
+              color: color,
+              border: `1px solid ${color}`,
+            }}
+          >
+            {step.result.defense === "none" ? "no defense" : step.result.defense}
+          </Box>
         )}
       </Box>
-      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.5 }}>
+      <Typography variant="caption" color="var(--ink-2)" sx={{ display: "block", mb: 1.5, fontSize: "0.8rem" }}>
         {step.description}
       </Typography>
       {step.error && <Alert severity="error" sx={{ mb: 1.5 }}>{step.error}</Alert>}
       {hasResult && m && (
         <Grid container spacing={2} alignItems="stretch">
           <Grid item xs={12} md={3}>
-            <Paper variant="outlined" sx={{ borderRadius: 2, height: "100%", p: 1 }}>
-              <RobustnessGauge score={m.robustness_score} klass={m.robustness_class} />
-            </Paper>
+            <Box sx={{ borderRadius: "8px", p: 1, border: "1px solid var(--line)" }}>
+              <RobustnessRing score={m.robustness_score} klass={m.robustness_class} size={130} />
+            </Box>
           </Grid>
           <Grid item xs={12} md={9}>
-            <MetricTable metrics={m} />
+            <Box component="dl" sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", m: 0 }}>
+              {["clean_accuracy", "adversarial_accuracy", "attack_success_rate", "robustness_score", "accuracy_drop", "confidence_shift"].map((k) => (
+                <Box key={k} sx={{ display: "flex", justifyContent: "space-between", py: 0.6, borderBottom: "1px solid var(--line)" }}>
+                  <Typography component="dt" sx={{ fontSize: "0.82rem", color: "var(--ink-2)" }}>
+                    {k.replace(/_/g, " ")}
+                  </Typography>
+                  <Typography component="dd" className="mh-mono" sx={{ m: 0, fontSize: "0.84rem", fontWeight: 500 }}>
+                    {typeof m[k] === "number" ? `${m[k].toFixed(1)}%` : String(m[k] ?? "—")}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
           </Grid>
         </Grid>
       )}
@@ -94,36 +137,44 @@ function ResultSummary({ steps }) {
   if (!defenseSteps.length) return null;
 
   const best = defenseSteps.reduce((prev, cur) =>
-    (cur.result.metrics.robustness_score > prev.result.metrics.robustness_score) ? cur : prev
+    cur.result.metrics.robustness_score > prev.result.metrics.robustness_score ? cur : prev
   );
 
   const worst = defenseSteps.reduce((prev, cur) =>
-    (cur.result.metrics.robustness_score < prev.result.metrics.robustness_score) ? cur : prev
+    cur.result.metrics.robustness_score < prev.result.metrics.robustness_score ? cur : prev
   );
 
   return (
-    <Panel eyebrow="Defense Ranking" title="Best vs Worst Defense" accent="#27E0FF" sx={{ mt: 3 }}>
+    <Panel title="Best vs Worst Defense" sx={{ mt: 3 }}>
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
-          <Box sx={{ p: 2, borderRadius: 2, border: "1px solid #2FD18A", backgroundColor: "rgba(47,209,138,0.08)" }}>
-            <Typography variant="overline" color="#2FD18A" sx={{ display: "block", mb: 1 }}>BEST DEFENSE</Typography>
-            <Typography variant="h6" className="mh-display" color="#2FD18A">{best.label}</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          <Box sx={{ p: 2, borderRadius: "8px", border: "1px solid var(--status-strong-text)", backgroundColor: "color-mix(in srgb, var(--status-strong) 8%, transparent)" }}>
+            <Typography variant="overline" sx={{ display: "block", color: "var(--status-strong-text)", fontSize: "0.68rem", fontWeight: 500, letterSpacing: "0.04em" }}>
+              BEST DEFENSE
+            </Typography>
+            <Typography variant="h6" className="mh-display" sx={{ color: "var(--status-strong-text)" }}>
+              {best.label}
+            </Typography>
+            <Typography sx={{ mt: 1, fontSize: "0.86rem", color: "var(--ink-2)" }}>
               Robustness: {best.result.metrics.robustness_score.toFixed(1)} — {best.result.metrics.robustness_class}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography sx={{ fontSize: "0.86rem", color: "var(--ink-2)" }}>
               Adversarial Accuracy: {best.result.metrics.adversarial_accuracy.toFixed(1)}%
             </Typography>
           </Box>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Box sx={{ p: 2, borderRadius: 2, border: "1px solid #FF5C66", backgroundColor: "rgba(255,92,102,0.08)" }}>
-            <Typography variant="overline" color="#FF5C66" sx={{ display: "block", mb: 1 }}>WEAKEST DEFENSE</Typography>
-            <Typography variant="h6" className="mh-display" color="#FF5C66">{worst.label}</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          <Box sx={{ p: 2, borderRadius: "8px", border: "1px solid var(--status-weak-text)", backgroundColor: "color-mix(in srgb, var(--status-weak) 8%, transparent)" }}>
+            <Typography variant="overline" sx={{ display: "block", color: "var(--status-weak-text)", fontSize: "0.68rem", fontWeight: 500, letterSpacing: "0.04em" }}>
+              WEAKEST DEFENSE
+            </Typography>
+            <Typography variant="h6" className="mh-display" sx={{ color: "var(--status-weak-text)" }}>
+              {worst.label}
+            </Typography>
+            <Typography sx={{ mt: 1, fontSize: "0.86rem", color: "var(--ink-2)" }}>
               Robustness: {worst.result.metrics.robustness_score.toFixed(1)} — {worst.result.metrics.robustness_class}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography sx={{ fontSize: "0.86rem", color: "var(--ink-2)" }}>
               Adversarial Accuracy: {worst.result.metrics.adversarial_accuracy.toFixed(1)}%
             </Typography>
           </Box>
@@ -144,32 +195,55 @@ export default function DemoMode() {
   const [steps, setSteps] = useState([]);
   const [summary, setSummary] = useState(null);
 
+  const compatible = { cifar10: ["resnet18", "mobilenetv2"], gtsrb: ["resnet18", "mobilenetv2"], mnist: ["cnn"] };
+  const attackOptions = ["fgsm", "pgd", "cw", "zoo", "hopskipjump"];
+
   return (
     <>
-      <PageShell
-        eyebrow="Demo Mode"
-        title="Automated Adversarial Evaluation"
-        subtitle="One click — see how the model performs before attack, under attack, and how each defense recovers robustness."
+      <PageHeader
+        section="Overview"
+        title="Demo Mode"
+        subtitle="One click runs a full adversarial evaluation sequence: clean baseline, attack, and each defense. Results come from the backend /api/demo/run endpoint."
       />
-      <Grid container spacing={3} className="mh-reveal">
+
+      <Grid container spacing={3}>
         <Grid item xs={12} md={4}>
-          <Panel eyebrow="Configuration" title="Demo Configuration" accent="#27E0FF">
+          <Panel title="Demo Configuration" marker="var(--blue)" sx={{ height: "100%" }}>
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>Dataset</InputLabel>
-              <Select value={dataset} label="Dataset" onChange={(e) => { setDataset(e.target.value); setModel(compatible[e.target.value][0]); }}>
-                {Object.keys(compatible).map((d) => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+              <Select
+                value={dataset}
+                label="Dataset"
+                onChange={(e) => {
+                  setDataset(e.target.value);
+                  setModel(compatible[e.target.value][0]);
+                }}
+              >
+                {Object.keys(compatible).map((d) => (
+                  <MenuItem key={d} value={d}>
+                    {d}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>Model</InputLabel>
               <Select value={model} label="Model" onChange={(e) => setModel(e.target.value)}>
-                {compatible[dataset].map((m) => <MenuItem key={m} value={m}>{m}</MenuItem>)}
+                {compatible[dataset].map((m) => (
+                  <MenuItem key={m} value={m}>
+                    {m}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>Attack</InputLabel>
               <Select value={attack} label="Attack" onChange={(e) => setAttack(e.target.value)}>
-                {attackOptions.map((a) => <MenuItem key={a} value={a}>{a.toUpperCase()}</MenuItem>)}
+                {attackOptions.map((a) => (
+                  <MenuItem key={a} value={a}>
+                    {a.toUpperCase()}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
             <TextField label="Epsilon" type="number" value={epsilon} onChange={(e) => setEpsilon(e.target.value)} fullWidth sx={{ mb: 2 }} />
@@ -190,12 +264,9 @@ export default function DemoMode() {
                     sample_limit: Number(samples),
                     batch_size: 64,
                   });
-                   setSummary(r.data);
+                  setSummary(r.data);
                   setSteps(r.data.steps || []);
-                  notify(
-                    `Demo complete: ${r.data.steps?.length || 0} steps in ${r.data.total_time}s`,
-                    "success"
-                  );
+                  notify(`Demo complete: ${r.data.steps?.length || 0} steps in ${r.data.total_time}s`, "success");
                 } catch (e) {
                   const detail = e.response?.data?.detail || e.message;
                   notify(`Demo failed: ${detail}`, "error");
@@ -214,49 +285,55 @@ export default function DemoMode() {
 
         <Grid item xs={12} md={8}>
           {running ? (
-            <Panel eyebrow="Live Results" title="Demo Progress" sx={{ minHeight: 400 }}>
+            <Panel title="Demo Progress" marker="var(--blue)" sx={{ minHeight: 400 }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-                <CircularProgress color="secondary" />
-                <Typography variant="body2" className="mh-mono">
+                <CircularProgress color="primary" />
+                <Typography className="mh-mono" sx={{ fontSize: "0.9rem" }}>
                   Running evaluation sequence...
                 </Typography>
               </Box>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mb: 2 }}>
+                <Typography className="mh-mono" sx={{ fontSize: "0.76rem", color: "var(--ink-3)" }}>
+                  Sequence: Clean baseline → Attack applied → Defenses
+                </Typography>
+              </Box>
               {steps.length > 0 ? (
-                steps.map((step) => (
-                  <StepCard key={step.step} step={step} data={step} />
-                ))
+                steps.map((step) => <StepCard key={step.step} step={step} data={step} />)
               ) : (
-                <Typography color="text.secondary">
-                  Step 1/2: Loading model and running clean baseline...
-                  <br /><br />
-                  The sequence runs: Clean baseline → Attack applied → Defenses
+                <Typography sx={{ fontSize: "0.88rem", color: "var(--ink-2)" }}>
+                  Step 1/3: Loading model and running clean baseline...
                 </Typography>
               )}
             </Panel>
           ) : (
-            <Panel eyebrow="Live Results" title="Demo Progress" sx={{ minHeight: 400 }}>
+            <Panel title="Demo Results" marker="var(--blue)" sx={{ minHeight: 400 }}>
               {summary ? (
                 <Box>
-                  <Typography variant="body2" color="text.secondary" className="mh-mono" sx={{ mb: 2 }}>
+                  <Typography className="mh-mono" sx={{ mb: 2, fontSize: "0.76rem", color: "var(--ink-3)" }}>
                     Completed {summary.total_steps} steps in {summary.total_time}s
                   </Typography>
                   {steps.map((step) => (
                     <StepCard key={step.step} step={step} data={step} />
                   ))}
                   {summary.best_defense && (
-                    <Typography variant="body2" color="#2FD18A" className="mh-mono" sx={{ mt: 2 }}>
+                    <Typography className="mh-mono" sx={{ mt: 2, color: "var(--status-strong-text)" }}>
                       Best defense: {summary.best_defense.name} (robustness {summary.best_defense.robustness_score.toFixed(1)})
                     </Typography>
                   )}
                 </Box>
               ) : (
-                <Box display="flex" alignItems="center" justifyContent="center" sx={{ py: 6 }}>
-                  <Typography color="text.secondary" textAlign="center">
-                    Configure and click "Run Demo Mode" to see a full adversarial evaluation sequence:<br /><br />
-                    1. Clean baseline (no attack)<br />
-                    2. Attack applied (model under attack)<br />
-                    3. Each defense applied (best vs worst ranking)
+                <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", py: 6, textAlign: "center" }}>
+                  <Typography sx={{ fontSize: "0.88rem", color: "var(--ink-2)" }}>
+                    Configure and click "Run Demo Mode" to see a full adversarial evaluation sequence:
                   </Typography>
+                  <Box component="ol" sx={{ mt: 1.5, pl: 4, textAlign: "left" }}>
+                    <li style={{ marginBottom: "0.4rem" }}>1. Clean baseline (no attack)</li>
+                    <li style={{ marginBottom: "0.4rem" }}>2. Attack applied (model under attack)</li>
+                    <li style={{ marginBottom: "0.4rem" }}>3. Each defense applied (best vs worst ranking)</li>
+                  </Box>
+                  <Button component={RouterLink} to="/evaluation" variant="outlined" size="small" sx={{ mt: 2 }}>
+                    Or try an interactive evaluation
+                  </Button>
                 </Box>
               )}
             </Panel>
@@ -264,6 +341,24 @@ export default function DemoMode() {
           {summary && summary.best_defense && <ResultSummary steps={summary.steps} />}
         </Grid>
       </Grid>
+
+      <Box sx={{ mt: 3 }}>
+        <Panel title="Robustness bands" caption="0–30 Weak, 31–60 Moderate, 61–100 Strong">
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+            {ROBUSTNESS_BANDS.map((b) => (
+              <Box key={b.klass} sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                <ClassBadge klass={b.klass} />
+                <Typography className="mh-mono" sx={{ fontSize: "0.74rem", color: "var(--ink-3)" }}>
+                  {b.min}–{b.max}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+          <FigCaption>
+            Robustness score = 0.4× adversarial accuracy + 0.3× (100 − attack success rate) + 0.3× retained confidence. Higher is better.
+          </FigCaption>
+        </Panel>
+      </Box>
     </>
   );
 }
