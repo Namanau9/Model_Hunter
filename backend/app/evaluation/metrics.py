@@ -118,10 +118,19 @@ def compute_metrics(
     asr = (flipped.sum().item() / max(clean_correct_mask.sum().item(), 1)) * 100.0
     result.attack_success_rate = asr
 
-    # Confidence shift: change in model confidence for true label.
-    true_conf_clean = clean_probs.gather(1, y.view(-1, 1)).squeeze(1).mean().item()
-    true_conf_adv = adv_probs.gather(1, y.view(-1, 1)).squeeze(1).mean().item()
-    result.confidence_shift = (true_conf_clean - true_conf_adv) * 100.0
+    # Confidence shift: change in model confidence for true label,
+    # measured on the subset that was correctly classified on clean input
+    # (matching the ASR denominator so the metric isn't skewed by samples
+    # the model was already wrong on).
+    correct = clean_correct_mask
+    if correct.sum().item() > 0:
+        cc = clean_probs[correct]
+        ac = adv_probs[correct]
+        true_conf_clean = cc.gather(1, y[correct].view(-1, 1)).squeeze(1).mean().item()
+        true_conf_adv = ac.gather(1, y[correct].view(-1, 1)).squeeze(1).mean().item()
+        result.confidence_shift = (true_conf_clean - true_conf_adv) * 100.0
+    else:
+        result.confidence_shift = 0.0
 
     # Transferability index: how often adv examples fool a different (source) model.
     if source_model is not None:

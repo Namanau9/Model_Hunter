@@ -137,6 +137,9 @@ def train_model(
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     loss_fn = torch.nn.CrossEntropyLoss()
 
+    total_steps = epochs * len(train_loader)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max(total_steps, 1))
+
     with gpu_execution():
         steps = 0
         model.train()
@@ -147,7 +150,9 @@ def train_model(
                 out = model(x)
                 loss = loss_fn(out, y)
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
                 optimizer.step()
+                scheduler.step()
                 steps += 1
 
         model.eval()
