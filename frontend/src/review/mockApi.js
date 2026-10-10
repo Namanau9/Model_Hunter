@@ -91,7 +91,7 @@ function computeMetrics({ model, dataset, attack, epsilon, defense, samples }) {
   const adv = Math.min(clean, adv0 + (clean - adv0) * gain);
   const asr = Math.max(0, asr0 * (1 - gain));
   const drop = clean - adv;
-  const conf = drop * 0.86; // estimated: not present in results files
+  const conf = drop * 0.5; // estimated confidence shift (proportional to accuracy drop, conservative factor — not in results files)
   const transfer = MODELS[model] && dataset !== "mnist" && (!defense || defense === "none") ? asr * 0.62 : 0;
   const n = Math.min(samples || 100, n0);
   const [score, klass] = robustness(adv, asr, conf);
