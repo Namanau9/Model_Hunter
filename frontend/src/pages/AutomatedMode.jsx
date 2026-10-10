@@ -184,7 +184,7 @@ function ResultSummary({ steps }) {
   );
 }
 
-export default function DemoMode() {
+export default function AutomatedMode() {
   const { notify } = useToast();
   const [model, setModel] = useState("cnn");
   const [dataset, setDataset] = useState("mnist");
@@ -202,13 +202,13 @@ export default function DemoMode() {
     <>
       <PageHeader
         section="Overview"
-        title="Demo Mode"
-        subtitle="One click runs a full adversarial evaluation sequence: clean baseline, attack, and each defense. Results come from the backend /api/demo/run endpoint."
+        title="Automated Mode"
+        subtitle="One click runs a full adversarial evaluation sequence: clean baseline, attack, and each defense. Results come from the backend /api/automated/run endpoint."
       />
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>
-          <Panel title="Demo Configuration" marker="var(--blue)" sx={{ height: "100%" }}>
+          <Panel title="Configuration" marker="var(--blue)" sx={{ height: "100%" }}>
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>Dataset</InputLabel>
               <Select
@@ -256,7 +256,7 @@ export default function DemoMode() {
                 setSteps([]);
                 setSummary(null);
                 try {
-                  const r = await apiPost("/demo/run", {
+                  const r = await apiPost("/automated/run", {
                     model_name: model,
                     dataset_name: dataset,
                     attack_name: attack,
@@ -266,10 +266,10 @@ export default function DemoMode() {
                   });
                   setSummary(r.data);
                   setSteps(r.data.steps || []);
-                  notify(`Demo complete: ${r.data.steps?.length || 0} steps in ${r.data.total_time}s`, "success");
+                  notify(`Automated mode complete: ${r.data.steps?.length || 0} steps in ${r.data.total_time}s`, "success");
                 } catch (e) {
                   const detail = e.response?.data?.detail || e.message;
-                  notify(`Demo failed: ${detail}`, "error");
+                  notify(`Automated mode failed: ${detail}`, "error");
                 } finally {
                   setRunning(false);
                 }
@@ -278,14 +278,14 @@ export default function DemoMode() {
               startIcon={running ? <CircularProgress size={20} color="inherit" /> : null}
               sx={{ mt: 1 }}
             >
-              {running ? "Running Demo..." : "Run Demo Mode"}
+              {running ? "Running Automated Mode..." : "Run Automated Mode"}
             </Button>
           </Panel>
         </Grid>
 
         <Grid item xs={12} md={8}>
           {running ? (
-            <Panel title="Demo Progress" marker="var(--blue)" sx={{ minHeight: 400 }}>
+            <Panel title="Progress" marker="var(--blue)" sx={{ minHeight: 400 }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
                 <CircularProgress color="primary" />
                 <Typography className="mh-mono" sx={{ fontSize: "0.9rem" }}>
@@ -306,7 +306,7 @@ export default function DemoMode() {
               )}
             </Panel>
           ) : (
-            <Panel title="Demo Results" marker="var(--blue)" sx={{ minHeight: 400 }}>
+            <Panel title="Results" marker="var(--blue)" sx={{ minHeight: 400 }}>
               {summary ? (
                 <Box>
                   <Typography className="mh-mono" sx={{ mb: 2, fontSize: "0.76rem", color: "var(--ink-3)" }}>
@@ -324,7 +324,7 @@ export default function DemoMode() {
               ) : (
                 <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", py: 6, textAlign: "center" }}>
                   <Typography sx={{ fontSize: "0.88rem", color: "var(--ink-2)" }}>
-                    Configure and click "Run Demo Mode" to see a full adversarial evaluation sequence:
+                    Configure and click "Run Automated Mode" to see a full adversarial evaluation sequence:
                   </Typography>
                   <Box component="ol" sx={{ mt: 1.5, pl: 4, textAlign: "left" }}>
                     <li style={{ marginBottom: "0.4rem" }}>1. Clean baseline (no attack)</li>

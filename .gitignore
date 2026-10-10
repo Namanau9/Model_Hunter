@@ -11,6 +11,8 @@ uvicorn.pid
 # Node
 node_modules/
 dist/
+dist-demo/
+tmp_extracted/
 
 # Data / artifacts (keep code, ignore downloaded datasets & generated output)
 datasets/*

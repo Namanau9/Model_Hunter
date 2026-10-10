@@ -1,5 +1,5 @@
-"""Demo mode API routes.
-
+"""Automated Mode API routes.
+ 
 Runs a full adversarial evaluation sequence automatically:
   1. Clean model baseline (no attack, no defense)
   2. Attack applied (full epsilon, no defense)
@@ -25,12 +25,12 @@ from app.datasets.registry import DatasetRegistry
 from app.config.settings import get_settings
 from app.utils.device import get_device, gpu_execution, requires_pin_memory
 
-router = APIRouter(prefix="/demo", tags=["demo"])
+router = APIRouter(prefix="/automated", tags=["automated"])
 
 
 @router.post("/run")
-def run_demo(req: EvaluationRequest):
-    """Run a full demo sequence: clean -> attack -> each defense, step by step."""
+def run_automated(req: EvaluationRequest):
+    """Run a full automated sequence: clean -> attack -> each defense, step by step."""
     started = time.perf_counter()
     steps = []
 
@@ -157,7 +157,7 @@ def run_demo(req: EvaluationRequest):
         "best_defense": best_defense,
         "steps": steps,
     }
-    return ok(summary, message="Demo sequence complete")
+    return ok(summary, message="Automated sequence complete")
 
 
 def _score_to_class(score: float) -> str:

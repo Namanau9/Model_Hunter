@@ -11,7 +11,7 @@ import Explainability from "./pages/Explainability";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
-import DemoMode from "./pages/DemoMode";
+import AutomatedMode from "./pages/AutomatedMode";
 
 export default function App() {
   return (
@@ -26,7 +26,7 @@ export default function App() {
         <Route path="/explainability" element={<Explainability />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="/demo" element={<DemoMode />} />
+        <Route path="/automated" element={<AutomatedMode />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

@@ -1,4 +1,4 @@
-// Review / demo entry point — serves the real UI against an in-browser
+// Review entry point — serves the real UI against an in-browser
 // mock of the API so it can be explored without the Python backend.
 // Production uses src/main.jsx; nothing here is bundled into `npm run build`.
 import React from "react";
@@ -15,9 +15,9 @@ import { installMockApi } from "./mockApi";
 
 installMockApi();
 
-function DemoRibbon() {
+function MockDataRibbon() {
   return (
-    <Tooltip title="Demo mode: the API is mocked in your browser. Attack numbers are seeded from results/attacks/*.json; anything not in those files is estimated. Run `npm run dev` with the backend for live data.">
+    <Tooltip title="Mock API: the API is mocked in your browser. Attack numbers are seeded from results/attacks/*.json; anything not in those files is estimated. Run `npm run dev` with the backend for live data.">
       <Box
         tabIndex={0}
         sx={{
@@ -38,7 +38,7 @@ function DemoRibbon() {
           whiteSpace: "nowrap",
         }}
       >
-        demo data · mock API
+demo data · mock API
       </Box>
     </Tooltip>
   );
@@ -52,7 +52,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <ToastProvider>
             <ErrorBoundary>
               <App />
-              <DemoRibbon />
+              <MockDataRibbon />
             </ErrorBoundary>
           </ToastProvider>
         </AppProvider>

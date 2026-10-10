@@ -15,7 +15,7 @@ export const NAV_GROUPS = [
     label: "Overview",
     items: [
       { to: "/", label: "Dashboard", Icon: SpaceDashboardOutlinedIcon, desc: "Robustness at a glance" },
-      { to: "/demo", label: "Demo Mode", Icon: RocketLaunchOutlinedIcon, desc: "One-click evaluation sequence" },
+      { to: "/automated", label: "Automated Mode", Icon: RocketLaunchOutlinedIcon, desc: "One-click evaluation sequence" },
     ],
   },
   {
