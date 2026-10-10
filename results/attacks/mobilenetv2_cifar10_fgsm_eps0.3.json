@@ -9,13 +9,13 @@
   "num_attacks_succeeded": 7247,
   "num_attacks_failed": 866,
   "perturbation_stats": {
-    "n_samples": 0,
+    "n_samples": 10000,
     "mean_linf": 0.3,
     "median_linf": 0.3,
     "max_linf": 0.3,
-    "mean_l2": 8.860014,
-    "median_l2": 8.932969,
-    "max_l2": 9.6,
+    "mean_l2": 15.351038,
+    "median_l2": 15.453776,
+    "max_l2": 16.627169,
     "epsilon": 0.3,
     "epsilon_violated": false,
     "asr_correct_denominator": 8113,
@@ -29,8 +29,8 @@
   "attack": "fgsm",
   "epsilon": 0.3,
   "phase": "epsilon_sweep",
-  "attack_runtime_sec": 9.4813,
-  "runtime_per_sample_ms": 0.9481,
+  "attack_runtime_sec": 6.4684,
+  "runtime_per_sample_ms": 0.6468,
   "robustness_score": 13.44,
   "robustness_class": "Weak"
 }

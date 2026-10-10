@@ -81,7 +81,7 @@ function robustness(adv, asr, conf) {
   return [Math.round(s * 100) / 100, s <= 30 ? "Weak" : s <= 60 ? "Moderate" : "Strong"];
 }
 
-const DEFENSE_GAIN = { adversarial_training: 0.42, ensemble: 0.22, input_preprocessing: 0.16 };
+const DEFENSE_GAIN = { adversarial_training: 0.22, ensemble: 0.12, input_preprocessing: 0.62 };
 
 function computeMetrics({ model, dataset, attack, epsilon, defense, samples }) {
   const hit = lookup(model, dataset, attack, epsilon);
@@ -111,7 +111,7 @@ function computeMetrics({ model, dataset, attack, epsilon, defense, samples }) {
 
 // ---------------------------------------------------------------- state
 const state = {
-  checkpoints: { cnn: ["mnist"], resnet18: ["cifar10", "gtsrb"], mobilenetv2: ["cifar10"] },
+  checkpoints: { cnn: ["mnist"], resnet18: ["cifar10", "gtsrb"], mobilenetv2: ["cifar10", "gtsrb"] },
   uploads: [{ name: "upload_resnet18_robust", file: "models/upload_resnet18_robust.pth", size_bytes: 44786331 }],
   history: [],
   nextId: 1,
@@ -373,7 +373,7 @@ async function route(method, path, body) {
     if (!MODELS[m]?.datasets.includes(d)) return [400, { detail: `Model '${m}' is not compatible with dataset '${d}'.` }];
     await sleep(1600 + epochs * 450);
     state.checkpoints[m] = [...new Set([...(state.checkpoints[m] || []), d])];
-    const base = { mnist: 97.5, cifar10: 61, gtsrb: 78 }[d] || 70;
+    const base = { mnist: 87.0, cifar10: 81.0, gtsrb: 88.0 }[d] || 70;
     return [200, env({ model: m, dataset: d, epochs, steps: epochs * 938, test_accuracy: +(Math.min(99.4, base + Math.log2(epochs + 1) * 3.1)).toFixed(2), checkpoint: `models/${m}_${d}.pth` }, "Model trained")];
   }
   if (method === "post" && p === "/models/upload") {

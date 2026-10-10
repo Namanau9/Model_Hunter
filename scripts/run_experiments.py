@@ -29,7 +29,7 @@ from pathlib import Path
 os.environ.setdefault("DATABASE_URL", "sqlite:///./experiment_modelhunter.db")
 os.environ.setdefault("DEVICE", "auto")
 
-sys.path.insert(0, str(Path(__file__).resolve().parent / "backend"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
@@ -195,8 +195,8 @@ def compute_adv_metrics(model: nn.Module, attack, loader: DataLoader, device: st
     }
 
 
-def train_model_full(model_name: str, dataset_name: str, epochs: int = 10,
-                     patience: int = 5, batch_size: int = 128,
+def train_model_full(model_name: str, dataset_name: str, epochs: int = 30,
+                     patience: int = 7, batch_size: int = 128,
                      lr: float = 0.01) -> dict:
     """Train a model on the COMPLETE training split with validation-based early stopping."""
     settings = get_settings()
@@ -236,9 +236,9 @@ def train_model_full(model_name: str, dataset_name: str, epochs: int = 10,
                                     generator=torch.Generator().manual_seed(SEED))
 
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True,
-                              num_workers=0, pin_memory=(device == "cuda" or device.startswith("cuda")))
+                              num_workers=0, pin_memory=(str(device).startswith("cuda")))
     val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False,
-                            num_workers=0, pin_memory=(device == "cuda" or device.startswith("cuda")))
+                            num_workers=0, pin_memory=(str(device).startswith("cuda")))
 
     optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
@@ -404,7 +404,7 @@ def evaluate_clean_accuracy(model_name: str, dataset_name: str, checkpoint_path:
     loader_cls = DatasetRegistry.get(dataset_name)
     test_ds = loader_cls.load(train=False)
     test_loader = DataLoader(test_ds, batch_size=256, shuffle=False,
-                             num_workers=0, pin_memory=(device == "cuda" or device.startswith("cuda")))
+                             num_workers=0, pin_memory=(str(device).startswith("cuda")))
 
     metrics = compute_clean_metrics(model, test_loader, device, num_classes)
     metrics["model"] = model_name
@@ -430,7 +430,7 @@ def run_attack_evaluation(model_name: str, dataset_name: str, checkpoint_path: s
     loader_cls = DatasetRegistry.get(dataset_name)
     test_ds = loader_cls.load(train=False)
     test_loader = DataLoader(test_ds, batch_size=64, shuffle=False,
-                             num_workers=0, pin_memory=(device == "cuda" or device.startswith("cuda")))
+                             num_workers=0, pin_memory=(str(device).startswith("cuda")))
 
     if attack_name == "fgsm":
         attack = FGSMCorrected(model, norm, epsilon=epsilon)
@@ -499,7 +499,7 @@ def run_transfer_experiment(source_model_name: str, source_dataset: str, target_
     loader_cls = DatasetRegistry.get(source_dataset)
     test_ds = loader_cls.load(train=False)
     test_loader = DataLoader(test_ds, batch_size=64, shuffle=False,
-                             num_workers=0, pin_memory=(device == "cuda" or device.startswith("cuda")))
+                             num_workers=0, pin_memory=(str(device).startswith("cuda")))
 
     # Generate adversarial examples using source model
     if attack_name == "fgsm":
@@ -583,10 +583,10 @@ def run_defense_evaluation(model_name: str, dataset_name: str, checkpoint_path: 
     loader_cls = DatasetRegistry.get(dataset_name)
     test_ds = loader_cls.load(train=False)
     test_loader = DataLoader(test_ds, batch_size=64, shuffle=False,
-                             num_workers=0, pin_memory=(device == "cuda" or device.startswith("cuda")))
+                             num_workers=0, pin_memory=(str(device).startswith("cuda")))
     train_ds = loader_cls.load(train=True)
     train_loader = DataLoader(train_ds, batch_size=64, shuffle=False,
-                              num_workers=0, pin_memory=(device == "cuda" or device.startswith("cuda")),
+                               num_workers=0, pin_memory=(str(device).startswith("cuda")),
                               drop_last=False)
 
     # Baseline (no defense)
@@ -929,7 +929,7 @@ def main() -> None:
         else:
             try:
                 t0 = time.perf_counter()
-                result = train_model_full(model_name, dataset_name, epochs=10, patience=5)
+                result = train_model_full(model_name, dataset_name, epochs=30, patience=7)
                 all_results["training"][f"{model_name}_{dataset_name}"] = result
                 trained_models[f"{model_name}_{dataset_name}"] = result["checkpoint_path"]
 

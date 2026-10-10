@@ -60,6 +60,7 @@ def compute_metrics_with_corrected_attack(model, attack, loader, device, epsilon
         stats.l2_values.extend(attack_stats.l2_values)
         stats.asr_correct_denom.extend(attack_stats.asr_correct_denom)
         stats.asr_succeeded.extend(attack_stats.asr_succeeded)
+        stats.n_samples += attack_stats.n_samples
 
     all_adv_preds = np.array(all_adv_preds)
     all_clean_preds = np.array(all_clean_preds)

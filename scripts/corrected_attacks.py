@@ -28,15 +28,16 @@ class AttackStats:
         self.n_samples: int = 0
 
     def record(self, perturbation: torch.Tensor, was_clean_correct: bool, was_flipped: bool) -> None:
-        pert = perturbation.detach().flatten(1)
+        """Record stats for ONE sample (perturbation shape: (C, H, W))."""
+        pert = perturbation.detach().flatten()
         pert = torch.nan_to_num(pert, nan=0.0, posinf=1.0, neginf=-1.0)
-        linf = pert.abs().max(dim=1).values.cpu().numpy()
-        l2 = pert.norm(p=2, dim=1).cpu().numpy()
-        self.linf_values.extend(linf.tolist())
-        self.l2_values.extend(l2.tolist())
+        linf = pert.abs().max().item()
+        l2 = pert.norm(p=2).item()
+        self.linf_values.append(linf)
+        self.l2_values.append(l2)
         self.asr_correct_denom.append(was_clean_correct)
         self.asr_succeeded.append(was_flipped)
-        self.n_samples += perturbation.size(0)
+        self.n_samples += 1
 
     def verify_epsilon(self, tol: float = 1e-4) -> bool:
         """Return True if L_inf <= epsilon for all recorded samples."""
