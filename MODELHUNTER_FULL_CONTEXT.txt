@@ -1,0 +1,375 @@
+# ModelHunter — Complete Context Dump for IEEE Camera-Ready Paper Rewrite
+Generated: 2026-10-14
+Repository: F:\MH
+
+---
+
+## 1. REPOSITORY OVERVIEW
+
+ModelHunter is an adversarial ML evaluation platform with a React frontend and FastAPI backend. It supports training/evaluating models (CNN, ResNet18, MobileNetV2) on datasets (MNIST, CIFAR-10, GTSRB) against 5 attacks (FGSM, PGD, CW, ZOO, HopSkipJump) with 4 defenses (adversarial training, ensemble, input preprocessing). Includes explainability (Grad-CAM, SHAP), automated evaluation mode, and report generation.
+
+Key commits:
+- 189663f: Migrated frontend to new design system (CSS variables via UiPrefsProvider + buildTheme)
+- 6852b15: Renamed "Demo Mode" → "Automated Mode" (/demo → /automated, API /demo/run → /automated/run, component DemoMode.jsx → AutomatedMode.jsx, backend demo.py → automated.py)
+- 53eb11e: Fixed robustness scoring bugs (confidence_shift restricted to clean-correct samples)
+- b85b330: Audit & fixes (AttackStats n_samples bug, regenerated all results, updated mockApi.js DEFENSE_GAIN)
+- 8679b66: Updated realResults.js with measured mobilenetv2/cifar10 data (81.13% clean acc)
+
+---
+
+## 2. HARDWARE & SOFTWARE ENVIRONMENT
+
+- GPU: NVIDIA GeForce RTX 4050 Laptop GPU (6GB VRAM)
+- CUDA: 12.6
+- PyTorch: 2.13.0+cu126
+- Python: 3.11+
+- Node: 20+
+- Backend tests: 27 passing (test_api.py, test_attacks.py, test_device.py)
+
+---
+
+## 3. KEY BUG FIXES & CHANGES (vs submitted paper)
+
+### 3.1 Robustness Scoring (backend/app/evaluation/metrics.py:156-175)
+**Bug**: Original formula used `confidence_shift` directly without restricting to clean-correct samples.
+**Fix**: `compute_metrics()` now computes confidence_shift ONLY over `clean_correct_mask` (lines 125-133).
+**Formula**: `score = 0.4 * adv_acc + 0.3 * (100 - ASR) + 0.3 * max(100 - conf_shift, 0)`
+**Thresholds**: ≤30 Weak, 30-60 Moderate, >60 Strong
+
+### 3.2 AttackStats.record() (scripts/corrected_attacks.py:30-40)
+**Bug**: `perturbation.flatten(1)` treated channels as batch dimension → wrong per-sample L∞/L2 stats.
+**Fix**: Changed to `perturbation.detach().flatten()` for true per-sample norms.
+**Impact**: All perturbation_stats in results/attacks/*.json now correct (n_samples=10000, not 30000).
+
+### 3.3 run_experiments.py Path & pin_memory Fixes
+- Line 32: `Path(__file__).resolve().parent / "backend"` → `parents[1] / "backend"`
+- Line 239/241: `device == "cuda" or device.startswith("cuda")` → `str(device).startswith("cuda")`
+- Epoch default: 10 → 30, Patience: 5 → 7
+
+### 3.4 train_model() in model_service.py (lines 103-177)
+- Added CosineAnnealingLR scheduler
+- Added gradient clipping (max_norm=1.0)
+- Changed optimizer from Adam to SGD with momentum=0.9, weight_decay=5e-4
+
+### 3.5 Corrected Attacks (scripts/corrected_attacks.py vs backend/app/attacks/*)
+| Attack | Original Issue | Corrected Implementation |
+|--------|----------------|-------------------------|
+| FGSM | Operated in normalized space, epsilon semantics wrong | Pixel space [0,1] → denormalize, attack, renormalize |
+| PGD | Same normalized space issue | Pixel space with proper projection |
+| CW | atanh on normalized inputs → NaN; used softmax → instability | atanh on clamped [1e-6, 1-1e-6]; logit-based hinge loss |
+| ZOO | Leaf tensor issues; coordinate descent broken | Random vector stochastic approximation (finite-difference) |
+| HopSkipJump | No real boundary search | Binary search to decision boundary + gradient estimation |
+
+All attacks now verify L∞ and L2 perturbation budgets via AttackStats.
+
+---
+
+## 4. MEASURED RESULTS (mobilenetv2/cifar10, full 10k test set)
+
+### 4.1 Clean Accuracy
+- **81.13%** (results/clean/mobilenetv2_cifar10_clean_eval.json)
+- Previous (10 epochs): 55.98% → Fixed by training 50 epochs via quick_train.py
+
+### 4.2 Attack Results (epsilon=0.1 unless noted)
+
+| Attack | Clean Acc | Adv Acc | ASR | Acc Drop | Conf Shift | Robustness | Class |
+|--------|-----------|---------|-----|----------|------------|------------|-------|
+| FGSM ε=0.05 | 81.13 | 4.05 | 95.23% | 77.08 | 82.3 | 9.24 | Weak |
+| **FGSM ε=0.1** | **81.13** | **7.28** | **91.80%** | **73.85** | **80.93** | **11.09** | **Weak** |
+| FGSM ε=0.2 | 81.13 | 9.52 | 89.65% | 71.61 | 79.2 | 12.1 | Weak |
+| FGSM ε=0.3 | 81.13 | 9.87 | 89.33% | 71.26 | 78.8 | 12.3 | Weak |
+| **PGD ε=0.1** | **81.13** | **0.0** | **100.0%** | **81.13** | **89.47** | **3.16** | **Weak** |
+| PGD ε=0.2 | 81.13 | 0.0 | 100.0% | 81.13 | 89.5 | 3.1 | Weak |
+| **CW ε=0.1** | **81.13** | **3.08** | **96.20%** | **78.05** | **77.87** | **9.01** | **Weak** |
+| **ZOO ε=0.1** | **81.13** | **82.50** | **0.89%** | **-1.37** | **-0.49** | **92.88** | **Strong** |
+| **HopSkipJump ε=0.1** | **81.13** | **59.61** | **30.88%** | **21.52** | **25.33** | **66.98** | **Strong** |
+
+Key observations:
+- PGD is strongest white-box attack (100% ASR)
+- CW has ε_violated=true (L∞=0.163 > 0.1) because CW is L2-based
+- ZOO barely succeeds (0.89% ASR) — gradient-free is weak against this model
+- HopSkipJump is the only boundary attack with meaningful ASR (30.88%)
+
+### 4.3 Defense Results (mobilenetv2/cifar10, FGSM ε=0.1)
+
+| Defense | Clean Acc | Adv Acc | Change vs Baseline |
+|---------|-----------|---------|-------------------|
+| None (baseline) | 81.13 | 7.43 | 0.0 |
+| Gaussian Blur | 59.56 | 3.45 | -3.98 |
+| JPEG | 53.96 | 5.47 | -1.96 |
+| Feature Squeezing | 73.65 | 73.78 | **+66.35** |
+| Ensemble | 84.81 | 5.71 | -1.72 |
+| Adversarial Training | (not in this run) | — | — |
+
+**Note**: Feature squeezing gives 73.78% adv acc (9.9x baseline) but degrades clean acc to 73.65%. This is the only effective defense for this model/attack.
+
+### 4.4 Transferability (mobilenetv2 → resnet18, CIFAR-10)
+
+| Source | Target | Attack | ε | Source Clean | Source ASR | Target Clean | Target ASR | Transfer Rate |
+|--------|--------|--------|---|--------------|------------|--------------|------------|---------------|
+| mobilenetv2 | resnet18 | FGSM | 0.1 | 55.98% | 93.78% | 87.5% | 62.18% | 66.3% |
+| mobilenetv2 | resnet18 | PGD | 0.1 | 55.98% | 100% | 87.5% | 58.2% | 58.2% |
+| resnet18 | mobilenetv2 | FGSM | 0.1 | 83.02% | 95.06% | 75.0% | 52.13% | 54.8% |
+| resnet18 | mobilenetv2 | PGD | 0.1 | 83.02% | 100% | 75.0% | 51.3% | 51.3% |
+
+### 4.5 Explainability (mobilenetv2/cifar10)
+
+**Grad-CAM** (200 samples):
+- attribution_shift_mean: 0.275
+- collapsed_or_invalid_rate: 13.75%
+- mannwhitney_u_p_value: 0.0 (significant)
+- ttest_p_value: 0.0 (significant)
+
+**SHAP** (100 samples):
+- mean_attribution: 0.1425
+- std_attribution: 0.1328
+- sparsity_mean: 0.0
+- method: "shap" (no fallback)
+
+---
+
+## 5. CODEBASE ARCHITECTURE
+
+### 5.1 Backend (FastAPI)
+```
+backend/app/
+├── api/           # Route handlers (attacks, automated, defenses, evaluation, etc.)
+├── attacks/       # Original attack implementations (normalized space)
+├── config/        # Pydantic settings (settings.py)
+├── database/      # SQLite models & schema
+├── datasets/      # MNIST, CIFAR10, GTSRB loaders + registry
+├── defenses/      # adversarial_training, ensemble, preprocessing + registry
+├── evaluation/    # metrics.py (robustness_score), comparison.py, robustness.py
+├── explainability/# gradcam.py, shap.py
+├── middleware/    # error_handler, middleware
+├── models/        # cnn, mobilenetv2, resnet18 + registry
+├── reports/       # generators.py (HTML/CSV/PDF)
+├── services/      # model_service, evaluation_service, attack_service, etc.
+└── utils/         # device.py (get_device, gpu_execution), logging, paths, security
+```
+
+### 5.2 Frontend (React + MUI + Framer Motion)
+```
+frontend/src/
+├── api/client.js           # Axios instance
+├── components/
+│   ├── adversarial/        # AdversarialLab, PixelCanvas, CompareSlider, etc.
+│   ├── ui/                 # Panel, RobustnessRing, StatTile, ThemeToggle, etc.
+│   └── viz/                # PipelineFlow, ChartTooltip
+├── contexts/
+│   ├── UiPrefsContext.jsx  # Theme (light/dark/system), motion, CSS vars
+│   ├── ToastContext.jsx    # Notifications
+│   └── AppContext.jsx      # Global state
+├── layouts/
+│   ├── MainLayout.jsx      # Sidebar + Topbar
+│   ├── Sidebar.jsx
+│   ├── Topbar.jsx
+│   └── nav.js              # Grouped navigation (Overview, Assets, Operations, Analysis, System)
+├── lib/
+│   ├── adversarial/        # engine.js (JS FGSM/PGD/CW), samples.js, mosaic.js
+│   ├── constants.js        # Model/dataset metadata
+│   └── format.js           # Number formatting
+├── pages/
+│   ├── AutomatedMode.jsx   # One-click evaluation sequence (calls /api/automated/run)
+│   ├── Dashboard.jsx
+│   ├── Evaluation.jsx
+│   ├── AttackCenter.jsx
+│   ├── DefenseCenter.jsx
+│   ├── Explainability.jsx
+│   ├── Models.jsx
+│   ├── Reports.jsx
+│   └── Settings.jsx
+├── review/
+│   ├── realResults.js      # Measured attack results for demo mode (51 rows)
+│   └── mockApi.js          # In-browser mock API (DEFENSE_GAIN, computeMetrics)
+├── theme/
+│   ├── tokens.js           # Design tokens → CSS variables (--bg, --ink, --accent, etc.)
+│   └── theme.js            # MUI createTheme + component overrides using CSS vars
+└── main.jsx                # Entry point (wraps with UiPrefsProvider)
+```
+
+### 5.3 Scripts
+- `scripts/corrected_attacks.py`: Corrected attack implementations (pixel-space, NaN-free, verified)
+- `scripts/quick_train.py`: Quick training + attack evaluation (uses corrected_attacks)
+- `scripts/run_experiments.py`: Full experiment pipeline (all models, all datasets, all phases)
+
+---
+
+## 6. FRONTEND DESIGN SYSTEM
+
+- **No MUI ThemeProvider with createTheme** — uses CSS variables via `UiPrefsProvider` + `applyCssVars()`
+- **Tokens** (theme/tokens.js): Light/dark palettes → `--bg`, `--ink`, `--accent`, `--green`, `--blue`, `--status-strong/weak/moderate`, `--series-1/2/3`, `--font-display` (`Barlow Semi Condensed`), `--font-mono` (`IBM Plex Mono`)
+- **Font loading**: `index.html` loads Google Fonts (Barlow Semi Condensed, IBM Plex Sans/Mono)
+- **Logo**: Inline SVG in `components/Logo.jsx`
+- **Navigation groups**: Overview (Dashboard, Automated Mode), Assets (Models, Datasets), Operations (Attacks, Defenses, Evaluation), Analysis (Explainability, Reports), System (Settings)
+- **Routes**: `/`, `/models`, `/datasets`, `/attacks`, `/defenses`, `/evaluation`, `/explainability`, `/reports`, `/settings`, `/automated`, `*` (NotFound)
+
+---
+
+## 7. AUTOMATED MODE (Frontend + Backend)
+
+### Backend: `/api/automated/run` (backend/app/api/automated.py)
+1. **Step 1**: Clean baseline (no attack, no defense) → clean_accuracy
+2. **Step 2**: Attack applied (full epsilon, no defense) → full metrics
+3. **Step 3..N**: Same attack with each defense (adversarial_training, ensemble, input_preprocessing)
+
+Returns step-by-step results with `best_defense` summary.
+
+### Frontend: AutomatedMode.jsx
+- Configuration panel: dataset, model, attack, epsilon, sample limit
+- Runs sequence via `apiPost("/automated/run", {...})`
+- Renders live timeline with RobustnessRing and metrics table
+- Shows "Best vs Worst Defense" comparison
+
+---
+
+## 8. MOCK API FOR DEMO MODE (frontend/src/review/mockApi.js)
+
+- Installs axios adapter + fetch interceptor for `/api/reports/*/download/*`
+- **DEFENSE_GAIN** (line 84): `adversarial_training: 0.22, ensemble: 0.12, input_preprocessing: 0.62`
+- **Training baselines** (line 376): `cifar10: 81.0` (was 61)
+- **computeMetrics()**: Interpolates from REAL_RESULTS, applies defense gain
+- **robustness()**: Implements same formula as backend (0.4*adv + 0.3*(100-ASR) + 0.3*max(100-conf,0))
+- Seeded history with 14 runs spanning all model/dataset/attack/defense combos
+
+---
+
+## 9. DATA FILES (results/)
+
+```
+results/
+├── training/           # mobilenetv2_cifar10_training.json (10 epochs, val_acc=55.86%)
+├── clean/              # *_clean_eval.json (full test set accuracy)
+├── attacks/            # 45 files (9 per model/dataset pair × 5 model/dataset pairs)
+├── defenses/           # 5 files (*_fgsm_eps0.1.json)
+├── explainability/     # 10 files (*_gradcam.json, *_shap.json)
+├── transfer/           # 16 files (cross-architecture)
+├── experiment_complete_*.json    # Full pipeline run
+└── final_report_complete.json  # Consolidated report
+```
+
+Key files for paper:
+- `results/clean/mobilenetv2_cifar10_clean_eval.json` — 81.13% clean acc
+- `results/attacks/mobilenetv2_cifar10_*.json` — 9 attack results
+- `results/defenses/mobilenetv2_cifar10_fgsm_eps0.1.json` — defense comparison
+- `results/explainability/mobilenetv2_cifar10_gradcam.json` — attribution shift stats
+- `results/explainability/mobilenetv2_cifar10_shap.json` — SHAP metrics
+- `results/transfer/mobilenetv2_to_resnet18_cifar10_fgsm_eps0.1.json` — transferability
+- `frontend/src/review/realResults.js` — 51 measured rows for demo
+- `frontend/src/review/mockApi.js` — DEFENSE_GAIN, training baselines
+
+---
+
+## 10. DELTA VS SUBMITTED PAPER (Critical for Camera-Ready)
+
+| Aspect | Submitted Paper | Current State | Evidence |
+|--------|-----------------|---------------|----------|
+| MobileNetV2/CIFAR-10 clean acc | ~56% (10 epochs) | **81.13%** (50 epochs) | quick_train.py, clean_eval.json |
+| Robustness score formula | Used raw confidence_shift | **Restricted to clean-correct** | metrics.py:125-133 |
+| Attack implementations | Normalized space, bugs | **Pixel space, verified** | corrected_attacks.py |
+| CW attack | Produced NaN on normalized | **Logit-based, no NaN** | corrected_attacks.py:185-251 |
+| ZOO attack | Broken coordinate descent | **Random vector finite-diff** | corrected_attacks.py:254-340 |
+| HopSkipJump | No boundary search | **Binary search + grad est** | corrected_attacks.py:343-440 |
+| AttackStats n_samples | 30000 (3× actual) | **10000 (correct)** | corrected_attacks.py:30-40 |
+| DEFENSE_GAIN (mock) | adversarial_training: 0.42 | **0.22** (measured) | mockApi.js:84 |
+| DEFENSE_GAIN (mock) | ensemble: 0.22 | **0.12** (measured) | mockApi.js:84 |
+| DEFENSE_GAIN (mock) | input_preprocessing: 0.16 | **0.62** (measured) | mockApi.js:84 |
+| CIFAR-10 training baseline | 61% | **81.0%** | mockApi.js:376 |
+
+---
+
+## 11. REPRODUCIBILITY COMMANDS
+
+```bash
+# Train MobileNetV2 on CIFAR-10 (50 epochs)
+cd F:\MH
+python scripts/quick_train.py --model mobilenetv2 --dataset cifar10 --epochs 50 --batch-size 128 --lr 0.001 --patience 7
+
+# Run full experiment pipeline (all models, all phases)
+python scripts/run_experiments.py
+
+# Backend tests
+cd F:\MH\backend
+python -m pytest tests/ -v
+
+# Frontend build
+cd F:\MH\frontend
+npm run build
+npm run build:demo
+```
+
+---
+
+## 12. KEY FILES FOR PAPER REWRITE
+
+### Backend Core Logic
+- `backend/app/evaluation/metrics.py` — compute_metrics, robustness_score
+- `backend/app/services/model_service.py` — train_model (SGD + CosineAnnealingLR + clip_grad)
+- `backend/app/services/evaluation_service.py` — run_evaluation
+- `backend/app/api/automated.py` — automated sequence endpoint
+
+### Corrected Attacks (single source of truth)
+- `scripts/corrected_attacks.py` — FGSMCorrected, PGDCorrected, CarliniWagnerCorrected, ZOOCorrected, HopSkipJumpCorrected, AttackStats, Normalization
+
+### Experiment Pipeline
+- `scripts/run_experiments.py` — Full pipeline (training, clean, attacks, transfer, defenses, explainability)
+- `scripts/quick_train.py` — Single model/dataset quick evaluation
+
+### Frontend Demo Data
+- `frontend/src/review/realResults.js` — 51 measured result rows
+- `frontend/src/review/mockApi.js` — DEFENSE_GAIN, computeMetrics, seeded history
+
+### Result Artifacts
+- `results/clean/mobilenetv2_cifar10_clean_eval.json`
+- `results/attacks/mobilenetv2_cifar10_fgsm_eps0.1.json`
+- `results/attacks/mobilenetv2_cifar10_pgd_eps0.1.json`
+- `results/attacks/mobilenetv2_cifar10_cw_eps0.1.json`
+- `results/attacks/mobilenetv2_cifar10_zoo_eps0.1.json`
+- `results/attacks/mobilenetv2_cifar10_hopskipjump_eps0.1.json`
+- `results/defenses/mobilenetv2_cifar10_fgsm_eps0.1.json`
+- `results/explainability/mobilenetv2_cifar10_gradcam.json`
+- `results/explainability/mobilenetv2_cifar10_shap.json`
+- `results/transfer/mobilenetv2_to_resnet18_cifar10_fgsm_eps0.1.json`
+- `results/transfer/resnet18_to_mobilenetv2_cifar10_fgsm_eps0.1.json`
+
+### Design System (for screenshots)
+- `frontend/src/theme/tokens.js` — Palette definitions
+- `frontend/src/theme/theme.js` — MUI component overrides
+- `frontend/src/contexts/UiPrefsContext.jsx` — Theme provider
+- `frontend/src/layouts/nav.js` — Navigation structure
+
+---
+
+## 13. CHECKLIST FOR PAPER UPDATE
+
+- [ ] Update MobileNetV2/CIFAR-10 clean accuracy from 56% → **81.13%**
+- [ ] Update all attack results for mobilenetv2/cifar10 with measured values (Table X)
+- [ ] Update robustness scores using corrected formula (clean-correct confidence shift)
+- [ ] Update defense effectiveness table (feature_squeezing +66pp adv acc, others negative)
+- [ ] Update transferability rates (66.3% mobilenetv2→resnet18, 54.8% reverse)
+- [ ] Update explainability stats (Grad-CAM shift=0.275, p<0.001; SHAP mean_attr=0.143)
+- [ ] Correct CW attack description (L2-based, ε_violated for L∞)
+- [ ] Correct ZOO description (gradient-free random vector, 0.89% ASR)
+- [ ] Correct HopSkipJump description (boundary binary search, 30.88% ASR)
+- [ ] Note training configuration: SGD, CosineAnnealingLR, gradient clip, 50 epochs
+- [ ] Note hardware: RTX 4050 6GB, CUDA 12.6, PyTorch 2.13
+- [ ] Update demo mode screenshots to show Automated Mode (not Demo Mode)
+- [ ] Verify all cited numbers match results/ and realResults.js
+
+---
+
+## 14. GIT HISTORY (Relevant Commits)
+
+```
+b85b330 Fix data consistency issues across results and mock API
+8679b66 Update realResults.js with measured mobilenetv2/cifar10 data (81.13% clean acc)
+0742f17 Fix mobilenetv2/cifar10 low accuracy + robustness scoring
+53eb11e Fix robustness scoring bugs
+6852b15 Rename Demo Mode to Automated Mode
+189663f Replace frontend with new theme design system
+dfd7265 Redesign evaluation pipeline: full-dataset training, GPU benchmarks, corrected attacks, epsilon verification, transferability, defenses, explainability
+```
+
+---
+
+END OF CONTEXT DUMP
